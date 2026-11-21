@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Tracking Proyek — PT SOSM (November 2026)</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+
+    .stage-btn {
+      transition: all 0.15s ease;
+    }
+
+    .stage-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 9999px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    .fade-in {
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-blue-600 flex items-center justify-center shadow-inner shrink-0">
+            <i data-lucide="anchor" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <h1 class="text-lg sm:text-xl font-bold tracking-tight leading-tight">PT.SOSM— Project Tracking Dashboard</h1>
+            <p class="text-xs text-slate-300 flex items-center gap-2 mt-0.5">
+              <span>2026</span>
+              <span class="text-slate-500">•</span>
+              <span id="headerDivisionLabel">Recruitment Division</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Division Switcher -->
+          <div class="inline-flex rounded-lg bg-slate-800 p-1 border border-slate-700" role="tablist">
+            <button type="button" id="tabRecruitment" role="tab" aria-selected="true"
+              class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors bg-blue-600 text-white shadow-sm">
+              Recruitment (<span id="countRecruitmentTab">23</span>)
+            </button>
+            <button type="button" id="tabAdm" role="tab" aria-selected="false"
+              class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors text-slate-300 hover:text-white">
+              ADM/Finance (<span id="countAdmTab">15</span>)
+            </button>
+          </div>
+
+          <!-- Action Buttons -->
+          <button type="button" id="btnAddProject"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs sm:text-sm font-medium transition-colors shadow-sm">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>Tambah Proyek</span>
+          </button>
+          <button type="button" id="btnExportCsv"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs sm:text-sm font-medium transition-colors">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Export CSV</span>
+          </button>
+          <button type="button" id="btnResetData" title="Reset ke Data Awal Excel"
+            class="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-rose-900/60 border border-slate-700 hover:border-rose-700 text-slate-300 hover:text-rose-200 text-xs sm:text-sm font-medium transition-colors">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- KPI Cards -->
+    <section aria-label="Ringkasan KPI" class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200/80 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Proyek</span>
+          <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+            <i data-lucide="folder-kanban" class="w-4 h-4"></i>
+          </span>
+        </div>
+        <div class="mt-3">
+          <div class="text-2xl sm:text-3xl font-bold text-slate-900" id="kpiTotal">23</div>
+          <p class="text-xs text-slate-500 mt-0.5" id="kpiTotalSub">Menampilkan semua proyek</p>
+        </div>
+      </div>
+
+      <button type="button" id="kpiCardCompleted"
+        class="text-left bg-white rounded-xl p-4 shadow-sm border border-slate-200/80 hover:border-emerald-300 hover:shadow transition-all flex flex-col justify-between">
+        <div class="flex items-center justify-between w-full">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Completed</span>
+          <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+          </span>
+        </div>
+        <div class="mt-3">
+          <div class="text-2xl sm:text-3xl font-bold text-emerald-600" id="kpiCompleted">3</div>
+          <p class="text-xs text-slate-500 mt-0.5" id="kpiCompletedSub">13.0% dari total</p>
+        </div>
+      </button>
+
+      <button type="button" id="kpiCardInProgress"
+        class="text-left bg-white rounded-xl p-4 shadow-sm border border-slate-200/80 hover:border-amber-300 hover:shadow transition-all flex flex-col justify-between">
+        <div class="flex items-center justify-between w-full">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500" id="kpiProgressLabel">In
+            Progress</span>
+          <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+            <i data-lucide="clock" class="w-4 h-4"></i>
+          </span>
+        </div>
+        <div class="mt-3">
+          <div class="text-2xl sm:text-3xl font-bold text-amber-600" id="kpiInProgress">20</div>
+          <p class="text-xs text-slate-500 mt-0.5" id="kpiInProgressSub">87.0% sedang berjalan</p>
+        </div>
+      </button>
+
+      <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200/80 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Rata-rata Progres</span>
+          <span class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center">
+            <i data-lucide="trending-up" class="w-4 h-4"></i>
+          </span>
+        </div>
+        <div class="mt-3">
+          <div class="text-2xl sm:text-3xl font-bold text-teal-700" id="kpiAvgProgress">50.9%</div>
+          <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+            <div id="kpiAvgBar" class="bg-teal-500 h-1.5 rounded-full transition-all duration-300" style="width: 50.9%">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" id="kpiCardIssues"
+        class="col-span-2 lg:col-span-1 text-left bg-white rounded-xl p-4 shadow-sm border border-slate-200/80 hover:border-rose-300 hover:shadow transition-all flex flex-col justify-between">
+        <div class="flex items-center justify-between w-full">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Urgent &amp; Kendala</span>
+          <span class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+          </span>
+        </div>
+        <div class="mt-3">
+          <div class="text-2xl sm:text-3xl font-bold text-rose-600" id="kpiIssues">13</div>
+          <p class="text-xs text-slate-500 mt-0.5" id="kpiIssuesSub">3 proyek berlabel URGENT</p>
+        </div>
+      </button>
+    </section>
+
+    <!-- Filter Toolbar -->
+    <section aria-label="Filter Data" class="bg-white rounded-xl p-4 shadow-sm border border-slate-200/80 space-y-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+        <!-- Search -->
+        <div class="lg:col-span-4 relative">
+          <i data-lucide="search"
+            class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          <input type="text" id="searchInput" placeholder="Cari proyek, kapal, principal, PIC, kendala..."
+            class="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-slate-50/50" />
+        </div>
+
+        <!-- Principal Filter -->
+        <div class="lg:col-span-3">
+          <select id="filterPrincipal" aria-label="Filter Principal"
+            class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white">
+            <option value="">Semua Principal</option>
+          </select>
+        </div>
+
+        <!-- PIC Filter -->
+        <div class="lg:col-span-3">
+          <select id="filterPic" aria-label="Filter PIC"
+            class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white">
+            <option value="">Semua PIC</option>
+          </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="lg:col-span-2">
+          <select id="filterStatus" aria-label="Filter Status"
+            class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white">
+            <option value="">Semua Status</option>
+            <option value="Completed">Completed</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Not Started">Not Started</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Date Filter Toolbar (Tanggal, Bulan, Tahun) -->
+      <div class="pt-3 border-t border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2.5 flex-1">
+          <div class="flex items-center gap-1.5 text-xs font-bold text-slate-700 mr-1 shrink-0">
+            <i data-lucide="calendar" class="w-4 h-4 text-blue-600"></i>
+            <span>Filter Tanggal, Bulan &amp; Tahun:</span>
+          </div>
+
+          <!-- Filter Tanggal (Hari 01-31) -->
+          <div class="min-w-[125px] flex-1 sm:flex-initial">
+            <select id="filterDay" aria-label="Filter Tanggal"
+              class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white text-slate-700 font-medium">
+              <option value="">Semua Tanggal (1–31)</option>
+            </select>
+          </div>
+
+          <!-- Filter Bulan -->
+          <div class="min-w-[130px] flex-1 sm:flex-initial">
+            <select id="filterMonth" aria-label="Filter Bulan"
+              class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white text-slate-700 font-medium">
+              <option value="">Semua Bulan</option>
+              <option value="01">Januari (01)</option>
+              <option value="02">Februari (02)</option>
+              <option value="03">Maret (03)</option>
+              <option value="04">April (04)</option>
+              <option value="05">Mei (05)</option>
+              <option value="06">Juni (06)</option>
+              <option value="07">Juli (07)</option>
+              <option value="08">Agustus (08)</option>
+              <option value="09">September (09)</option>
+              <option value="10">Oktober (10)</option>
+              <option value="11">November (11)</option>
+              <option value="12">Desember (12)</option>
+            </select>
+          </div>
+
+          <!-- Filter Tahun -->
+          <div class="min-w-[110px] flex-1 sm:flex-initial">
+            <select id="filterYear" aria-label="Filter Tahun"
+              class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white text-slate-700 font-medium">
+              <option value="">Semua Tahun</option>
+            </select>
+          </div>
+
+          <!-- Kalender / Tanggal Persis Picker -->
+          <div class="flex items-center gap-1.5 pl-1 sm:border-l sm:border-slate-200">
+            <span class="text-[11px] text-slate-400 hidden sm:inline" title="Pilih tanggal langsung dari kalender">Kalender:</span>
+            <div class="relative flex items-center">
+              <input type="date" id="filterExactDate" aria-label="Pilih Tanggal Lengkap" title="Pilih Tanggal Lengkap (Kalender)"
+                class="px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 bg-white text-slate-700" />
+              <button type="button" id="btnClearDate" title="Hapus filter kalender"
+                class="hidden ml-1 p-1 text-slate-400 hover:text-rose-600 rounded">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Periode Aktif Pill -->
+        <div id="dateFilterActivePill" class="hidden items-center gap-1.5 text-xs text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 shrink-0">
+          <i data-lucide="filter" class="w-3.5 h-3.5"></i>
+          <span id="dateFilterActiveText" class="font-medium">Periode: -</span>
+          <button type="button" id="btnResetDateFilter" class="ml-1 text-blue-500 hover:text-rose-600 font-bold p-0.5" title="Hapus Filter Waktu">
+            <i data-lucide="x" class="w-3 h-3"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Filter Chips -->
+      <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-medium text-slate-500">Filter Cepat:</span>
+          <button type="button" id="chipUrgent"
+            class="px-2.5 py-1 rounded-full text-xs font-medium border border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition-colors">
+            Urgent Saja
+          </button>
+          <button type="button" id="chipIssues"
+            class="px-2.5 py-1 rounded-full text-xs font-medium border border-slate-200 text-slate-600 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200 transition-colors">
+            Ada Kendala / Issue
+          </button>
+          <button type="button" id="chipNearDone"
+            class="px-2.5 py-1 rounded-full text-xs font-medium border border-slate-200 text-slate-600 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors">
+            Hampir Selesai (&ge;70%)
+          </button>
+        </div>
+        <button type="button" id="btnResetFilters"
+          class="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors">
+          Reset Semua Filter
+        </button>
+      </div>
+    </section>
+
+    <!-- Charts Section -->
+    <section aria-label="Visualisasi Analitik" class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <!-- Chart 1: Stage Funnel -->
+      <div class="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-slate-200/80 flex flex-col">
+        <div class="mb-3">
+          <h2 class="text-sm font-bold text-slate-800" id="chartStageTitle">Pipeline Tahapan Rekrutmen</h2>
+          <p class="text-xs text-slate-500">Jumlah proyek yang telah melewati tiap tahapan</p>
+        </div>
+        <div class="relative h-72 w-full">
+          <canvas id="stageChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Principal Distribution -->
+      <div class="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-slate-200/80 flex flex-col">
+        <div class="mb-3">
+          <h2 class="text-sm font-bold text-slate-800">Distribusi Proyek per Principal</h2>
+          <p class="text-xs text-slate-500">Perbandingan status Completed vs In Progress / Not Started</p>
+        </div>
+        <div class="relative h-72 w-full">
+          <canvas id="principalChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 3: PIC Workload & Completion -->
+      <div class="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-slate-200/80 flex flex-col">
+        <div class="mb-3">
+          <h2 class="text-sm font-bold text-slate-800">Beban Proyek &amp; Progres per PIC</h2>
+          <p class="text-xs text-slate-500">Jumlah proyek ditangani dan rata-rata penyelesaian (%)</p>
+        </div>
+        <div class="relative h-72 w-full">
+          <canvas id="picChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Urgent & Issue Highlights (Shown when Recruitment or when issues exist) -->
+    <section id="attentionSection" aria-label="Sorotan Proyek Urgent dan Kendala"
+      class="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-slate-200/80">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+          <h2 class="text-sm font-bold text-slate-800">Sorotan Proyek Urgent &amp; Hambatan Utama</h2>
+        </div>
+        <span class="text-xs text-slate-500">Klik kartu untuk melihat detail &amp; memperbarui status</span>
+      </div>
+      <div id="attentionGrid" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <!-- Populated dynamically -->
+      </div>
+    </section>
+
+    <!-- ADM/Finance Empty Notice (Shown only on ADM tab when all are Not Started) -->
+    <section id="admInfoBanner"
+      class="hidden bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="flex items-start gap-3">
+        <i data-lucide="info" class="w-5 h-5 text-blue-600 shrink-0 mt-0.5"></i>
+        <div>
+          <h3 class="text-sm font-semibold text-blue-900">Data ADM/Finance November 2026 Belum Terisi</h3>
+          <p class="text-xs text-blue-800 mt-0.5">
+            Sesuai file Excel sumber, terdapat 15 slot proyek ADM/Finance berstatus <strong>Not Started</strong> (0%).
+            Anda dapat langsung mengisi detail proyek atau mencentang tahapan (Collected s/d Email) pada tabel di bawah.
+          </p>
+        </div>
+      </div>
+      <button type="button" id="btnAdmQuickAdd"
+        class="shrink-0 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium transition-colors">
+        + Isi Slot Pertama
+      </button>
+    </section>
+
+    <!-- Interactive Project Tracking Table -->
+    <section aria-label="Tabel Detail Proyek"
+      class="bg-white rounded-xl shadow-sm border border-slate-200/80 overflow-hidden">
+      <div
+        class="px-4 sm:px-5 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-slate-800" id="tableTitle">Daftar Proyek — Recruitment Division
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">Klik tombol tahapan (1–7) pada baris untuk memperbarui progres secara
+            langsung.</p>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-slate-600">
+          <span>Urutkan:</span>
+          <select id="sortSelect" aria-label="Urutkan Proyek"
+            class="px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+            <option value="no-asc">No (Terkecil)</option>
+            <option value="date-desc">Tanggal (Terbaru)</option>
+            <option value="date-asc">Tanggal (Terlama)</option>
+            <option value="progress-desc">Progres (Tertinggi)</option>
+            <option value="progress-asc">Progres (Terendah)</option>
+            <option value="principal-asc">Principal (A–Z)</option>
+            <option value="pic-asc">PIC (A–Z)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-left border-collapse min-w-[980px]">
+          <thead>
+            <tr
+              class="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              <th class="py-3 px-3 w-12 text-center">No</th>
+              <th class="py-3 px-3 min-w-[260px]">Nama Proyek &amp; Aktivitas</th>
+              <th class="py-3 px-3 w-40">Principal</th>
+              <th class="py-3 px-3 w-32">PIC</th>
+              <th class="py-3 px-3 w-64 text-center" id="tableStageHeader">Tahapan (Klik untuk Toggle)</th>
+              <th class="py-3 px-3 w-28 text-center">Progres</th>
+              <th class="py-3 px-3 w-28 text-center">Status</th>
+              <th class="py-3 px-3 min-w-[180px]">Remark / Issue</th>
+              <th class="py-3 px-3 w-16 text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="projectTableBody" class="divide-y divide-slate-100 text-xs sm:text-sm">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div id="tableEmptyState" class="hidden py-12 px-4 text-center">
+        <i data-lucide="search-x" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+        <p class="text-sm font-medium text-slate-700">Tidak ada proyek yang cocok dengan filter saat ini.</p>
+        <p class="text-xs text-slate-500 mt-1">Coba ubah kata kunci pencarian atau reset filter untuk melihat seluruh
+          data.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+    <div
+      class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <span>Sumber Data: <strong>Tracking Project PT SOSM 2026.xlsx</strong> (Sheet: Daily Tracking — 11 Nov
+        2026)</span>
+      <span>Perubahan tersimpan otomatis di browser lokal Anda.</span>
+    </div>
+  </footer>
+
+  <!-- Project Detail / Edit / Add Modal -->
+  <div id="projectModal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden fade-in">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div>
+          <h3 class="text-base font-bold text-slate-900" id="modalTitle">Detail &amp; Edit Proyek</h3>
+          <p class="text-xs text-slate-500" id="modalSubtitle">Recruitment Division</p>
+        </div>
+        <button type="button" id="btnCloseModal" aria-label="Tutup Modal"
+          class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="projectForm" class="p-5 overflow-y-auto custom-scrollbar space-y-4">
+        <input type="hidden" id="formProjectId" />
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label for="formName" class="block text-xs font-semibold text-slate-700 mb-1">Nama Proyek *</label>
+            <input type="text" id="formName" required
+              class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
+          </div>
+          <div>
+            <label for="formDate" class="block text-xs font-semibold text-slate-700 mb-1">Tanggal</label>
+            <input type="date" id="formDate" value="2026-11-11"
+              class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="formPrincipal" class="block text-xs font-semibold text-slate-700 mb-1">Principals</label>
+            <input type="text" id="formPrincipal" placeholder="Contoh: Monsoon-WestNav"
+              class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
+          </div>
+          <div>
+            <label for="formPic" class="block text-xs font-semibold text-slate-700 mb-1">Person in Charge (PIC)</label>
+            <input type="text" id="formPic" placeholder="Contoh: Dina / Herindra"
+              class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
+          </div>
+        </div>
+
+        <div>
+          <label for="formActivities" class="block text-xs font-semibold text-slate-700 mb-1">Aktivitas / Progres
+            Lapangan</label>
+          <textarea id="formActivities" rows="2"
+            class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"></textarea>
+        </div>
+
+        <div>
+          <label for="formRemark" class="block text-xs font-semibold text-slate-700 mb-1">Remark / Issue</label>
+          <textarea id="formRemark" rows="2" placeholder="No issue atau tuliskan kendala..."
+            class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"></textarea>
+        </div>
+
+        <div>
+          <span class="block text-xs font-semibold text-slate-700 mb-2">Checklist 7 Tahapan</span>
+          <div id="modalStagesContainer" class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </form>
+
+      <div class="px-5 py-3.5 border-t border-slate-200 bg-slate-50 flex items-center justify-between gap-2">
+        <button type="button" id="btnDeleteProject"
+          class="hidden px-3 py-2 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors">
+          Hapus Proyek
+        </button>
+        <div class="flex items-center gap-2 ml-auto">
+          <button type="button" id="btnCancelModal"
+            class="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-xs sm:text-sm font-medium text-slate-700 transition-colors">
+            Batal
+          </button>
+          <button type="submit" form="projectForm"
+            class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm font-medium text-white shadow-sm transition-colors">
+            Simpan Perubahan
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset Confirmation Modal -->
+  <div id="resetModal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-5 fade-in space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+          <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Reset ke Data Awal Excel?</h3>
+          <p class="text-xs text-slate-600 mt-1">
+            Semua perubahan yang Anda buat di dashboard (centang tahapan, proyek tambahan, atau edit remark) akan
+            dikembalikan ke data asli file <strong>Tracking Project PT SOSM 2026.xlsx</strong>.
+          </p>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" id="btnCancelReset"
+          class="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-xs sm:text-sm font-medium text-slate-700">
+          Batal
+        </button>
+        <button type="button" id="btnConfirmReset"
+          class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-xs sm:text-sm font-medium text-white shadow-sm">
+          Ya, Reset Data
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast"
+    class="fixed bottom-5 right-5 z-50 hidden items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-lg text-xs sm:text-sm font-medium fade-in">
+    <i data-lucide="check-circle" class="w-4 h-4 text-teal-400"></i>
+    <span id="toastMessage">Perubahan disimpan</span>
+  </div>
+
+  <script>
+    // =========================================================
+    // 1. GROUNDED INITIAL DATA (Tracking Project PT SOSM 2026.xlsx)
+    // =========================================================
+    const STAGE_CONFIG = {
+      recruitment: [
+        { key: 's0', short: 'Drf', label: 'Drafted' },
+        { key: 's1', short: 'Rev', label: 'Review' },
+        { key: 's2', short: 'Sub', label: 'Submitted' },
+        { key: 's3', short: 'Int', label: 'Interviewed' },
+        { key: 's4', short: 'App', label: 'Approved' },
+        { key: 's5', short: 'Doc', label: 'Documentation' },
+        { key: 's6', short: 'Dep', label: 'Deployed' }
+      ],
+      adm: [
+        { key: 's0', short: 'Col', label: 'Collected' },
+        { key: 's1', short: 'Drf', label: 'Drafted' },
+        { key: 's2', short: 'Rev', label: 'Review' },
+        { key: 's3', short: 'Sub', label: 'Submitted PA' },
+        { key: 's4', short: 'App', label: 'Approved PA' },
+        { key: 's5', short: 'Inv', label: 'Invoicing' },
+        { key: 's6', short: 'Eml', label: 'Email' }
+      ]
+    };
+
+    const INITIAL_RECRUITMENT_DATA = [
+      { id: 'rec-1', no: 1, date: '2026-11-11', name: 'Roster Crews for November FC M.Champion and TB.Trans Zhou Shan', principal: 'IMC-Trinity Bermuda', pic: 'Dina', activities: 'The Crews headed to Guinea on 7th November 2026', stages: [1, 1, 1, 1, 1, 1, 1], remark: 'No issue' },
+      { id: 'rec-2', no: 2, date: '2026-11-11', name: 'Repration of Crews TB.Trans Yantai MST-URGENT', principal: 'IMC-Trinity Bermuda', pic: 'Dina/Ingga', activities: 'Proposed crews and keep searching the Master Canadidates with experiances Z-Peller and Towing Tug with Experiaces Africa more preferable', stages: [1, 1, 1, 1, 0, 0, 0], remark: 'Difficulities to find Master Tug with experiaces Towing and Z-Peller,also Language barrier' },
+      { id: 'rec-3', no: 3, date: '2026-11-11', name: 'Roaster Crews for December FC.M.Fortune and TB.Trans Zhou Shan', principal: 'IMC-Trinity Bermuda', pic: 'Dina/Ingga', activities: 'Prepare the list of Crews Change for December 2026 with look for new crews and rejoin crews', stages: [1, 0, 0, 0, 0, 0, 0], remark: 'No issue' },
+      { id: 'rec-4', no: 4, date: '2026-11-11', name: 'Crews Change for October JT FC1/JT FC2/JT TUG3/JT TUG4', principal: 'Monsoon-Bohai', pic: 'Dina/Herindra', activities: 'Crews Change for October postpone and will plan in November,for the list of Roster Complated and Waitig for the Ticket Issue and also the Sea Contract', stages: [1, 1, 1, 1, 1, 1, 0], remark: 'No issue' },
+      { id: 'rec-5', no: 5, date: '2026-11-11', name: 'Opportunities for Position 2nd Officer of MV ULTRA COEGA deadline End of November 2026 salary 3600-3800$ solo join CBA 9M+/-1', principal: 'Monsoon-WestNav', pic: 'Dina', activities: 'Keep saerching of 2nd Officer for fill up that candidates-URGENT', stages: [1, 1, 0, 0, 0, 0, 0], remark: 'A lot of Candiates already proposed and still unqualified with the client request' },
+      { id: 'rec-6', no: 6, date: '2026-11-11', name: '4E for Ultra Belegue and Ultra Agulhas complated', principal: 'Monsoon-WestNav', pic: 'Dina', activities: '4E-Sukamto waiting for the schedule of departure and 4E-Ramadan Adi.S waiting for complated documentations and schedule for departure', stages: [1, 1, 1, 1, 1, 0, 0], remark: 'No issue' },
+      { id: 'rec-7', no: 7, date: '2026-11-11', name: 'COLEMAN START-Conatiner Ship look for OILER and 4E join in China', principal: 'Monsoon-WestNav', pic: 'Dina', activities: 'Look for the suitable candidates', stages: [1, 0, 0, 0, 0, 0, 0], remark: 'Still look for the suitable Candidates' },
+      { id: 'rec-8', no: 8, date: '2026-11-11', name: 'ORCHARD STAR-Container,AB/MB/OLR estimation join beginning of Dec 2026', principal: 'Monsoon-WestNav', pic: 'Dina', activities: 'Look for the suitable candidates', stages: [1, 0, 0, 0, 0, 0, 0], remark: 'Still look for the suitable Candidates' },
+      { id: 'rec-9', no: 9, date: '2026-11-11', name: 'MV ULTRA BENGUELA AB join in Dec SALARY 1751$', principal: 'Monsoon-WestNav', pic: 'Dina', activities: 'Look for the suitable candidates', stages: [1, 0, 0, 0, 0, 0, 0], remark: 'Still look for the suitable Candidates' },
+      { id: 'rec-10', no: 10, date: '2026-11-11', name: 'MV ULTRA COEGA AB join in Dec SALARY 1363$ in Singapore', principal: 'Monsoon-WestNav', pic: 'Dina', activities: 'Look for the suitable candidates', stages: [1, 0, 0, 0, 0, 0, 0], remark: 'Still look for the suitable Candidates' },
+      { id: 'rec-11', no: 11, date: '2026-11-11', name: 'MV ULTRA AGULAHS 2E estimation join in Sinagpore in Mid Dec 2026,salary 4896$', principal: 'Monsoon-WestNav', pic: 'Dina', activities: 'Look for the suitable candidates', stages: [1, 0, 0, 0, 0, 0, 0], remark: 'Still look for the suitable Candidates' },
+      { id: 'rec-12', no: 12, date: '2026-11-11', name: 'Fitter for SPV in Egypth Operation or middle East BGP estimation join on 15th November 2026 Salary 1800$-2000$', principal: 'Monsoon-BGP', pic: 'Dina', activities: 'Look for the suitable candidates', stages: [1, 1, 0, 0, 0, 0, 0], remark: 'Still look for the suitable Candidates' },
+      { id: 'rec-13', no: 13, date: '2026-11-11', name: 'MV Capricorn 5 NEED MASTER SPB EX AFRICA URGENT Join asap', principal: 'SKY LINE', pic: 'Dina', activities: 'Look for the suitable candidates', stages: [1, 1, 0, 0, 0, 0, 0], remark: 'Still look for the suitable Candidates' },
+      { id: 'rec-14', no: 14, date: '2026-11-11', name: 'MV Capricorn 2 AB Repetation just wait for schedule departure', principal: 'SKY LINE', pic: 'Dina', activities: 'the Candidates just wait for the Ticket and Sea Contract', stages: [1, 1, 1, 1, 1, 1, 0], remark: 'No issue' },
+      { id: 'rec-15', no: 15, date: '2026-11-11', name: 'Crews change Novemeber for MV Capricorn 5,1 and MV BLUE WAVE Complated', principal: 'SKY LINE', pic: 'Dina', activities: 'the Crews headed to Guinea on 7th November 2026 and 6th November 2026', stages: [1, 1, 1, 1, 1, 1, 1], remark: 'No issue' },
+      { id: 'rec-16', no: 16, date: '2026-11-11', name: 'a lot of opportunities and available position they offers,we still look for the suitable candidates for fill up that position', principal: 'CHH and others China Clients', pic: 'Dina', activities: 'Keep going to propose the candidates', stages: [1, 0, 0, 0, 0, 0, 0], remark: 'Try to find suitable candidates as per they request' },
+      { id: 'rec-17', no: 17, date: '2026-11-11', name: 'STS-Arrange the set of crewsof FC and TUG for STS,PROCESS THE INTERVIEW and will continou tomorrow', principal: 'STS', pic: 'Herindra/Ingga', activities: 'The Candidates already interview and continou tomorrow', stages: [1, 1, 1, 1, 0, 0, 0], remark: 'Still look for the available candidates' },
+      { id: 'rec-18', no: 18, date: '2026-11-11', name: 'Set a crews for FC the Yuan Peng Crews Batch 1', principal: 'Yuan Peng', pic: 'Herindra/Lifia', activities: 'The 1st Batch already interview just wait the ship come to indonesia', stages: [1, 1, 1, 1, 1, 0, 1], remark: 'waiting so long for the ship come to indonesia' },
+      { id: 'rec-19', no: 19, date: '2026-11-11', name: 'Set a crews for FC the Yuan Peng Crews Batch 2', principal: 'Yuan Peng', pic: 'Herindra/Lifia', activities: 'The list of Crews List Yuang Peng FC 2 on process', stages: [1, 1, 0, 0, 0, 0, 0], remark: 'waiting so long for the ship come to indonesia' },
+      { id: 'rec-20', no: 20, date: '2026-11-11', name: 'Set a crews for TB.MICHELA join in Paiton', principal: 'LPR', pic: 'Herindra/Halya', activities: 'The Crews joined already in Paiton compalted', stages: [1, 1, 1, 1, 1, 1, 1], remark: 'No issue' },
+      { id: 'rec-21', no: 21, date: '2026-11-11', name: 'Crews Change for Sea Safe 006&008 on process', principal: 'SEA SAFE', pic: 'Herindra/Halya', activities: 'The Crews for SS 006 tomorrow will interview', stages: [1, 1, 1, 1, 0, 0, 0], remark: 'No issue' },
+      { id: 'rec-22', no: 22, date: '2026-11-11', name: 'Crews Change for Sea Safe 006&008 on process', principal: 'SEA SAFE', pic: 'Herindra/Lifia', activities: 'SS 008 BSN will signed contract tomorrow and waiting schedule for departure', stages: [1, 1, 1, 1, 1, 1, 0], remark: 'No issue' },
+      { id: 'rec-23', no: 23, date: '2026-11-11', name: 'Crews Change For JP 17 MST and 2nd Officer', principal: 'JAYA PERKASA SAMODERA', pic: 'Herindra/Halya', activities: 'MST and 2nd Officer waiting schedule for on board and will arrange to join in TG.Priok', stages: [1, 1, 1, 1, 1, 1, 0], remark: 'No issue' }
+    ];
+
+    const INITIAL_ADM_DATA = Array.from({ length: 15 }, (_, idx) => ({
+      id: `adm-${idx + 1}`,
+      no: idx + 1,
+      date: '2026-11-11',
+      name: '',
+      principal: '',
+      pic: '',
+      activities: '',
+      stages: [0, 0, 0, 0, 0, 0, 0],
+      remark: ''
+    }));
+
+    // =========================================================
+    // 2. APPLICATION STATE & HELPERS
+    // =========================================================
+    const STORAGE_KEY = 'pt_sosm_tracking_dashboard_v1';
+
+    const MONTH_NAMES_ID = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+
+    const MONTH_NAMES_SHORT_ID = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+
+    function parseDateParts(dateStr) {
+      if (!dateStr) return { year: '', month: '', day: '', formatted: '' };
+      const isoMatch = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) {
+        return {
+          year: isoMatch[1],
+          month: isoMatch[2],
+          day: isoMatch[3],
+          formatted: `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`
+        };
+      }
+      const dmyMatch = String(dateStr).match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+      if (dmyMatch) {
+        const day = dmyMatch[1].padStart(2, '0');
+        const month = dmyMatch[2].padStart(2, '0');
+        const year = dmyMatch[3];
+        return {
+          year,
+          month,
+          day,
+          formatted: `${year}-${month}-${day}`
+        };
+      }
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+        const year = String(d.getFullYear());
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return { year, month, day, formatted: `${year}-${month}-${day}` };
+      }
+      return { year: '', month: '', day: '', formatted: '' };
+    }
+
+    function formatDateDisplay(dateStr) {
+      const parts = parseDateParts(dateStr);
+      if (!parts.year) return dateStr || '-';
+      const mIndex = parseInt(parts.month, 10) - 1;
+      const monthName = MONTH_NAMES_SHORT_ID[mIndex] || parts.month;
+      return `${parseInt(parts.day, 10)} ${monthName} ${parts.year}`;
+    }
+
+    let state = {
+      division: 'recruitment', // 'recruitment' | 'adm'
+      data: {
+        recruitment: JSON.parse(JSON.stringify(INITIAL_RECRUITMENT_DATA)),
+        adm: JSON.parse(JSON.stringify(INITIAL_ADM_DATA))
+      },
+      filters: {
+        search: '',
+        principal: '',
+        pic: '',
+        status: '',
+        year: '',
+        month: '',
+        day: '',
+        exactDate: '',
+        onlyUrgent: false,
+        onlyIssues: false,
+        onlyNearDone: false
+      },
+      sort: 'no-asc'
+    };
+
+    let charts = {
+      stage: null,
+      principal: null,
+      pic: null
+    };
+
+    function loadSavedState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.recruitment) && Array.isArray(parsed.adm)) {
+            state.data = parsed;
+          }
+        }
+      } catch (e) {
+        // Ignore storage errors in sandboxed contexts
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+      } catch (e) {
+        // Ignore storage errors
+      }
+    }
+
+    function calcProjectMetrics(proj) {
+      const doneCount = proj.stages.reduce((acc, v) => acc + (v ? 1 : 0), 0);
+      const pct = (doneCount / 7) * 100;
+      let status = 'In Progress';
+      if (doneCount === 7) status = 'Completed';
+      else if (doneCount === 0) status = 'Not Started';
+
+      const combinedText = `${proj.name || ''} ${proj.activities || ''} ${proj.remark || ''}`.toLowerCase();
+      const isUrgent = combinedText.includes('urgent') || combinedText.includes('asap');
+      const remarkClean = (proj.remark || '').trim().toLowerCase();
+      const hasIssue = remarkClean !== '' && remarkClean !== 'no issue' && remarkClean !== '-';
+
+      return { doneCount, pct, status, isUrgent, hasIssue };
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMessage');
+      toastMsg.textContent = msg;
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+      }, 2500);
+    }
+
+    // =========================================================
+    // 3. FILTERING & SORTING
+    // =========================================================
+    function getActiveList() {
+      return state.data[state.division];
+    }
+
+    function getFilteredList() {
+      const list = getActiveList();
+      const f = state.filters;
+      const q = f.search.trim().toLowerCase();
+
+      const filtered = list.filter((p) => {
+        const m = calcProjectMetrics(p);
+        const dateParts = parseDateParts(p.date);
+
+        if (q) {
+          const dateDisp = formatDateDisplay(p.date);
+          const hay = `${p.no} ${p.date || ''} ${dateDisp} ${p.name} ${p.principal} ${p.pic} ${p.activities} ${p.remark}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        if (f.principal && (p.principal || '(Belum Diisi)') !== f.principal) return false;
+        if (f.pic) {
+          if (f.pic.startsWith('IND:')) {
+            const target = f.pic.slice(4).toLowerCase();
+            const members = (p.pic || '').split('/').map(s => s.trim().toLowerCase());
+            if (!members.includes(target)) return false;
+          } else {
+            if ((p.pic || '(Belum Diisi)') !== f.pic) return false;
+          }
+        }
+        if (f.status && m.status !== f.status) return false;
+
+        // Date / Month / Year filtering
+        if (f.exactDate) {
+          if (dateParts.formatted !== f.exactDate) return false;
+        } else {
+          if (f.year && dateParts.year !== f.year) return false;
+          if (f.month && dateParts.month !== f.month) return false;
+          if (f.day && dateParts.day !== f.day) return false;
+        }
+
+        if (f.onlyUrgent && !m.isUrgent) return false;
+        if (f.onlyIssues && !m.hasIssue) return false;
+        if (f.onlyNearDone && !(m.pct >= 70 && m.pct < 100)) return false;
+        return true;
+      });
+
+      return filtered.sort((a, b) => {
+        const ma = calcProjectMetrics(a);
+        const mb = calcProjectMetrics(b);
+        switch (state.sort) {
+          case 'progress-desc': return mb.pct - ma.pct || a.no - b.no;
+          case 'progress-asc': return ma.pct - mb.pct || a.no - b.no;
+          case 'principal-asc': return (a.principal || 'zzz').localeCompare(b.principal || 'zzz') || a.no - b.no;
+          case 'pic-asc': return (a.pic || 'zzz').localeCompare(b.pic || 'zzz') || a.no - b.no;
+          case 'date-desc': return (b.date || '').localeCompare(a.date || '') || a.no - b.no;
+          case 'date-asc': return (a.date || '').localeCompare(b.date || '') || a.no - b.no;
+          default: return a.no - b.no;
+        }
+      });
+    }
+
+    function populateFilterDropdowns() {
+      const list = getActiveList();
+      const principalSelect = document.getElementById('filterPrincipal');
+      const picSelect = document.getElementById('filterPic');
+      const yearSelect = document.getElementById('filterYear');
+      const daySelect = document.getElementById('filterDay');
+      const monthSelect = document.getElementById('filterMonth');
+      const exactDateInput = document.getElementById('filterExactDate');
+
+      // Populate Principal
+      const principals = [...new Set(list.map(p => p.principal || '(Belum Diisi)'))].sort();
+      const currentP = state.filters.principal;
+      principalSelect.innerHTML = '<option value="">Semua Principal</option>' +
+        principals.map(pr => `<option value="${escapeHtml(pr)}">${escapeHtml(pr)}</option>`).join('');
+      if (principals.includes(currentP)) principalSelect.value = currentP;
+      else state.filters.principal = '';
+
+      // Populate PIC
+      const picTeams = [...new Set(list.map(p => p.pic || '(Belum Diisi)'))].sort();
+      const individuals = [...new Set(
+        list.flatMap(p => (p.pic || '').split('/').map(s => s.trim()).filter(Boolean))
+      )].sort();
+
+      const currentPic = state.filters.pic;
+      let picHtml = '<option value="">Semua PIC</option>';
+      if (individuals.length > 0) {
+        picHtml += '<optgroup label="PIC Individu (Termasuk Tim)">' +
+          individuals.map(ind => `<option value="IND:${escapeHtml(ind)}">${escapeHtml(ind)} (Semua Proyek)</option>`).join('') +
+          '</optgroup>';
+      }
+      picHtml += '<optgroup label="Tim / Kolom PIC Persis">' +
+        picTeams.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('') +
+        '</optgroup>';
+      picSelect.innerHTML = picHtml;
+      picSelect.value = currentPic;
+      if (picSelect.value !== currentPic) state.filters.pic = '';
+
+      // Populate Year Dropdown (always include 2026 + any years in dataset)
+      const dataYears = list.map(p => parseDateParts(p.date).year).filter(Boolean);
+      const allYears = [...new Set(['2026', ...dataYears])].sort().reverse();
+      const currentYear = state.filters.year;
+      yearSelect.innerHTML = '<option value="">Semua Tahun</option>' +
+        allYears.map(y => `<option value="${escapeHtml(y)}">${escapeHtml(y)}</option>`).join('');
+      if (allYears.includes(currentYear)) yearSelect.value = currentYear;
+      else if (!currentYear) yearSelect.value = '';
+
+      // Populate Day Dropdown (01 to 31)
+      if (daySelect.options.length <= 1) {
+        let dayHtml = '<option value="">Semua Tanggal (1–31)</option>';
+        for (let d = 1; d <= 31; d++) {
+          const val = String(d).padStart(2, '0');
+          dayHtml += `<option value="${val}">Tanggal ${val}</option>`;
+        }
+        daySelect.innerHTML = dayHtml;
+      }
+      daySelect.value = state.filters.day || '';
+      monthSelect.value = state.filters.month || '';
+      exactDateInput.value = state.filters.exactDate || '';
+
+      const clearBtn = document.getElementById('btnClearDate');
+      if (state.filters.exactDate) {
+        clearBtn.classList.remove('hidden');
+      } else {
+        clearBtn.classList.add('hidden');
+      }
+    }
+
+    function syncDateInputsFromDropdowns() {
+      const f = state.filters;
+      if (f.year && f.month && f.day) {
+        f.exactDate = `${f.year}-${f.month}-${f.day}`;
+        document.getElementById('filterExactDate').value = f.exactDate;
+        document.getElementById('btnClearDate').classList.remove('hidden');
+      } else {
+        f.exactDate = '';
+        document.getElementById('filterExactDate').value = '';
+        document.getElementById('btnClearDate').classList.add('hidden');
+      }
+    }
+
+    // =========================================================
+    // 4. RENDERING: KPIs, CHARTS, ATTENTION PANEL, TABLE
+    // =========================================================
+    function renderAll() {
+      document.getElementById('countRecruitmentTab').textContent = state.data.recruitment.length;
+      document.getElementById('countAdmTab').textContent = state.data.adm.length;
+      document.getElementById('headerDivisionLabel').textContent =
+        state.division === 'recruitment' ? 'Recruitment Division' : 'ADM/Finance Division';
+
+      // Tab styles
+      const tabRec = document.getElementById('tabRecruitment');
+      const tabAdm = document.getElementById('tabAdm');
+      if (state.division === 'recruitment') {
+        tabRec.className = 'px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors bg-blue-600 text-white shadow-sm';
+        tabRec.setAttribute('aria-selected', 'true');
+        tabAdm.className = 'px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors text-slate-300 hover:text-white';
+        tabAdm.setAttribute('aria-selected', 'false');
+      } else {
+        tabAdm.className = 'px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors bg-blue-600 text-white shadow-sm';
+        tabAdm.setAttribute('aria-selected', 'true');
+        tabRec.className = 'px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors text-slate-300 hover:text-white';
+        tabRec.setAttribute('aria-selected', 'false');
+      }
+
+      // Sync chip styles
+      updateChipUI('chipUrgent', state.filters.onlyUrgent, 'bg-rose-600 text-white border-rose-600');
+      updateChipUI('chipIssues', state.filters.onlyIssues, 'bg-amber-600 text-white border-amber-600');
+      updateChipUI('chipNearDone', state.filters.onlyNearDone, 'bg-teal-600 text-white border-teal-600');
+
+      // Sync active date filter pill
+      const datePill = document.getElementById('dateFilterActivePill');
+      const datePillText = document.getElementById('dateFilterActiveText');
+      const f = state.filters;
+      const hasDateFilter = Boolean(f.exactDate || f.year || f.month || f.day);
+      if (hasDateFilter) {
+        let label = 'Periode: ';
+        if (f.exactDate) {
+          label += formatDateDisplay(f.exactDate);
+        } else {
+          const parts = [];
+          if (f.day) parts.push(`Tgl ${f.day}`);
+          if (f.month) parts.push(MONTH_NAMES_ID[parseInt(f.month, 10) - 1]);
+          if (f.year) parts.push(f.year);
+          label += parts.join(' ');
+        }
+        datePillText.textContent = label;
+        datePill.classList.remove('hidden');
+        datePill.classList.add('inline-flex');
+      } else {
+        datePill.classList.add('hidden');
+        datePill.classList.remove('inline-flex');
+      }
+
+      const allList = getActiveList();
+      const filteredList = getFilteredList();
+
+      renderKPIs(filteredList, allList.length);
+      renderCharts(filteredList);
+      renderAttentionPanel(allList);
+      renderTable(filteredList);
+
+      // Show ADM info banner if on ADM tab and all not started
+      const admBanner = document.getElementById('admInfoBanner');
+      if (state.division === 'adm') {
+        const anyStarted = allList.some(p => p.name.trim() !== '' || p.stages.some(Boolean));
+        admBanner.classList.toggle('hidden', anyStarted);
+      } else {
+        admBanner.classList.add('hidden');
+      }
+
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    }
+
+    function updateChipUI(id, active, activeClasses) {
+      const el = document.getElementById(id);
+      if (active) {
+        el.className = `px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${activeClasses}`;
+      } else {
+        el.className = 'px-2.5 py-1 rounded-full text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-100 transition-colors';
+      }
+    }
+
+    function renderKPIs(list, totalAll) {
+      const count = list.length;
+      let completed = 0;
+      let inProgress = 0;
+      let notStarted = 0;
+      let sumPct = 0;
+      let issues = 0;
+      let urgents = 0;
+
+      list.forEach(p => {
+        const m = calcProjectMetrics(p);
+        if (m.status === 'Completed') completed++;
+        else if (m.status === 'In Progress') inProgress++;
+        else notStarted++;
+        sumPct += m.pct;
+        if (m.hasIssue) issues++;
+        if (m.isUrgent) urgents++;
+      });
+
+      const avg = count > 0 ? (sumPct / count) : 0;
+      const completedPct = count > 0 ? ((completed / count) * 100).toFixed(1) : '0.0';
+
+      document.getElementById('kpiTotal').textContent = count;
+      document.getElementById('kpiTotalSub').textContent =
+        count === totalAll ? `Seluruh proyek (${totalAll})` : `Terfilter dari ${totalAll} proyek`;
+
+      document.getElementById('kpiCompleted').textContent = completed;
+      document.getElementById('kpiCompletedSub').textContent = `${completedPct}% selesai penuh`;
+
+      if (state.division === 'adm' && inProgress === 0 && notStarted > 0) {
+        document.getElementById('kpiProgressLabel').textContent = 'Not Started';
+        document.getElementById('kpiInProgress').textContent = notStarted;
+        document.getElementById('kpiInProgressSub').textContent = 'Belum ada proyek dimulai';
+      } else {
+        document.getElementById('kpiProgressLabel').textContent = 'In Progress';
+        document.getElementById('kpiInProgress').textContent = inProgress;
+        const inProgPct = count > 0 ? ((inProgress / count) * 100).toFixed(1) : '0.0';
+        document.getElementById('kpiInProgressSub').textContent =
+          notStarted > 0 ? `${inProgPct}% proses • ${notStarted} belum mulai` : `${inProgPct}% sedang berjalan`;
+      }
+
+      document.getElementById('kpiAvgProgress').textContent = `${avg.toFixed(1)}%`;
+      document.getElementById('kpiAvgBar').style.width = `${Math.min(100, Math.max(0, avg))}%`;
+
+      document.getElementById('kpiIssues').textContent = issues;
+      document.getElementById('kpiIssuesSub').textContent = `${urgents} proyek berlabel URGENT`;
+    }
+
+    function renderCharts(list) {
+      const stagesMeta = STAGE_CONFIG[state.division];
+      document.getElementById('chartStageTitle').textContent =
+        state.division === 'recruitment' ? 'Pipeline Tahapan Rekrutmen' : 'Pipeline Tahapan ADM/Finance';
+
+      // 1. Stage Funnel Chart
+      const stageCounts = stagesMeta.map((_, idx) =>
+        list.reduce((acc, p) => acc + (p.stages[idx] ? 1 : 0), 0)
+      );
+      const stageLabels = stagesMeta.map(s => s.label);
+
+      if (charts.stage) charts.stage.destroy();
+      charts.stage = new Chart(document.getElementById('stageChart'), {
+        type: 'bar',
+        data: {
+          labels: stageLabels,
+          datasets: [{
+            label: 'Jumlah Proyek',
+            data: stageCounts,
+            backgroundColor: [
+              '#2563eb', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#059669'
+            ],
+            borderRadius: 6,
+            barThickness: 20
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => {
+                  const pct = list.length > 0 ? ((ctx.raw / list.length) * 100).toFixed(1) : '0.0';
+                  return ` ${ctx.raw} proyek (${pct}%)`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: { precision: 0, font: { size: 11 } },
+              grid: { color: '#f1f5f9' }
+            },
+            y: {
+              ticks: { font: { size: 11, weight: '500' } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+
+      // 2. Principal Distribution Chart
+      const principalMap = {};
+      list.forEach(p => {
+        const key = (p.principal || '').trim() || 'Belum Diisi';
+        if (!principalMap[key]) principalMap[key] = { completed: 0, inProgress: 0, notStarted: 0, total: 0 };
+        const m = calcProjectMetrics(p);
+        if (m.status === 'Completed') principalMap[key].completed++;
+        else if (m.status === 'In Progress') principalMap[key].inProgress++;
+        else principalMap[key].notStarted++;
+        principalMap[key].total++;
+      });
+
+      const principalSorted = Object.entries(principalMap)
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 11);
+
+      const pLabels = principalSorted.map(([k]) => k.length > 20 ? k.slice(0, 18) + '…' : k);
+      if (charts.principal) charts.principal.destroy();
+      charts.principal = new Chart(document.getElementById('principalChart'), {
+        type: 'bar',
+        data: {
+          labels: pLabels,
+          datasets: [
+            {
+              label: 'Completed',
+              data: principalSorted.map(([, v]) => v.completed),
+              backgroundColor: '#10b981',
+              borderRadius: 4
+            },
+            {
+              label: 'In Progress',
+              data: principalSorted.map(([, v]) => v.inProgress),
+              backgroundColor: '#f59e0b',
+              borderRadius: 4
+            },
+            {
+              label: 'Not Started',
+              data: principalSorted.map(([, v]) => v.notStarted),
+              backgroundColor: '#cbd5e1',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } }
+          },
+          scales: {
+            x: { stacked: true, beginAtZero: true, ticks: { precision: 0, font: { size: 11 } }, grid: { color: '#f1f5f9' } },
+            y: { stacked: true, ticks: { font: { size: 11 } }, grid: { display: false } }
+          }
+        }
+      });
+
+      // 3. PIC Workload & Avg Completion Chart
+      const picMap = {};
+      list.forEach(p => {
+        const key = (p.pic || '').trim() || 'Belum Diisi';
+        if (!picMap[key]) picMap[key] = { count: 0, sumPct: 0 };
+        picMap[key].count++;
+        picMap[key].sumPct += calcProjectMetrics(p).pct;
+      });
+
+      const picSorted = Object.entries(picMap).sort((a, b) => b[1].count - a[1].count);
+      if (charts.pic) charts.pic.destroy();
+      charts.pic = new Chart(document.getElementById('picChart'), {
+        type: 'bar',
+        data: {
+          labels: picSorted.map(([k]) => k),
+          datasets: [
+            {
+              label: 'Jumlah Proyek',
+              data: picSorted.map(([, v]) => v.count),
+              backgroundColor: '#3b82f6',
+              borderRadius: 6,
+              yAxisID: 'y'
+            },
+            {
+              label: 'Rata-rata Progres (%)',
+              data: picSorted.map(([, v]) => v.count > 0 ? Number((v.sumPct / v.count).toFixed(1)) : 0),
+              type: 'line',
+              borderColor: '#0d9488',
+              backgroundColor: '#0d9488',
+              borderWidth: 2.5,
+              pointRadius: 4,
+              tension: 0.25,
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              position: 'left',
+              ticks: { precision: 0, font: { size: 11 } },
+              grid: { color: '#f1f5f9' },
+              title: { display: true, text: 'Proyek', font: { size: 10 } }
+            },
+            y1: {
+              beginAtZero: true,
+              max: 100,
+              position: 'right',
+              ticks: { callback: v => v + '%', font: { size: 11 } },
+              grid: { drawOnChartArea: false }
+            },
+            x: {
+              ticks: { font: { size: 10 } },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    function renderAttentionPanel(allList) {
+      const section = document.getElementById('attentionSection');
+      const grid = document.getElementById('attentionGrid');
+
+      const urgentOrCritical = allList
+        .map(p => ({ p, m: calcProjectMetrics(p) }))
+        .filter(({ p, m }) => m.status !== 'Completed' && (m.isUrgent || (m.hasIssue && (p.remark.toLowerCase().includes('waiting') || p.remark.toLowerCase().includes('unqualified') || p.remark.toLowerCase().includes('difficulities')))));
+
+      if (urgentOrCritical.length === 0) {
+        section.classList.add('hidden');
+        return;
+      }
+
+      section.classList.remove('hidden');
+      grid.innerHTML = urgentOrCritical.slice(0, 6).map(({ p, m }) => {
+        const badge = m.isUrgent
+          ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 uppercase">Urgent</span>'
+          : '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 uppercase">Hambatan</span>';
+        return `
+          <button type="button" data-open-id="${escapeHtml(p.id)}"
+            class="text-left p-3.5 rounded-xl border ${m.isUrgent ? 'border-rose-200 bg-rose-50/40 hover:bg-rose-50' : 'border-amber-200 bg-amber-50/40 hover:bg-amber-50'} transition-all flex flex-col justify-between gap-2">
+            <div class="w-full">
+              <div class="flex items-center justify-between gap-2 mb-1">
+                <span class="text-[11px] font-semibold text-slate-500">#${p.no} • ${escapeHtml(p.principal || '-')}</span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] text-slate-500 font-medium">${formatDateDisplay(p.date)}</span>
+                  ${badge}
+                </div>
+              </div>
+              <p class="text-xs font-bold text-slate-900 line-clamp-2">${escapeHtml(p.name)}</p>
+              <p class="text-[11px] text-slate-600 mt-1 line-clamp-2">${escapeHtml(p.remark || p.activities)}</p>
+            </div>
+            <div class="flex items-center justify-between w-full pt-2 border-t border-slate-200/60 text-[11px]">
+              <span class="font-medium text-slate-600">PIC: ${escapeHtml(p.pic || '-')}</span>
+              <span class="font-bold ${m.pct >= 70 ? 'text-teal-700' : 'text-amber-700'}">${m.pct.toFixed(1)}% (${m.doneCount}/7)</span>
+            </div>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function renderTable(list) {
+      const tbody = document.getElementById('projectTableBody');
+      const emptyState = document.getElementById('tableEmptyState');
+      const stagesMeta = STAGE_CONFIG[state.division];
+
+      document.getElementById('tableTitle').textContent =
+        state.division === 'recruitment'
+          ? `Daftar Proyek — Recruitment Division (${list.length})`
+          : `Daftar Proyek — ADM/Finance Division (${list.length})`;
+
+      document.getElementById('tableStageHeader').textContent =
+        `Tahapan (${stagesMeta.map(s => s.short).join(' · ')})`;
+
+      if (list.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+      tbody.innerHTML = list.map((p) => {
+        const m = calcProjectMetrics(p);
+
+        const statusBadge =
+          m.status === 'Completed'
+            ? '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700">Completed</span>'
+            : m.status === 'In Progress'
+              ? '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-700">In Progress</span>'
+              : '<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">Not Started</span>';
+
+        const urgentTag = m.isUrgent
+          ? '<span class="inline-block ml-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700 align-middle">URGENT</span>'
+          : '';
+
+        const stageButtons = stagesMeta.map((st, idx) => {
+          const active = Boolean(p.stages[idx]);
+          return `
+            <button type="button"
+              data-toggle-id="${escapeHtml(p.id)}"
+              data-stage-idx="${idx}"
+              title="${escapeHtml(st.label)}: ${active ? 'Selesai' : 'Belum'}"
+              class="stage-btn w-8 h-7 rounded-md text-[10px] font-bold border ${active
+              ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
+              : 'bg-white text-slate-400 border-slate-200 hover:border-blue-400 hover:text-blue-600'
+            }">
+              ${st.short}
+            </button>
+          `;
+        }).join('');
+
+        const barColor = m.pct === 100 ? 'bg-emerald-500' : m.pct >= 70 ? 'bg-teal-500' : m.pct >= 40 ? 'bg-blue-500' : 'bg-amber-500';
+
+        const remarkHtml = m.hasIssue
+          ? `<span class="text-rose-700 bg-rose-50/70 px-2 py-1 rounded-md inline-block text-xs leading-snug">${escapeHtml(p.remark)}</span>`
+          : `<span class="text-slate-400 text-xs">${escapeHtml(p.remark || '-')}</span>`;
+
+        const nameDisplay = (p.name || '').trim()
+          ? `<div class="font-semibold text-slate-900 leading-snug">${escapeHtml(p.name)}${urgentTag}</div>`
+          : `<div class="italic text-slate-400">Slot #${p.no} — Belum ada nama proyek</div>`;
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition-colors">
+            <td class="py-3 px-3 text-center font-semibold text-slate-500">${p.no}</td>
+            <td class="py-3 px-3">
+              ${nameDisplay}
+              <div class="flex flex-wrap items-center gap-2 mt-1">
+                <span class="inline-flex items-center gap-1 text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded font-medium shrink-0">
+                  <i data-lucide="calendar" class="w-3 h-3 text-slate-400"></i>
+                  ${formatDateDisplay(p.date)}
+                </span>
+                ${p.activities ? `<span class="text-[11px] text-slate-500 line-clamp-1">${escapeHtml(p.activities)}</span>` : ''}
+              </div>
+            </td>
+            <td class="py-3 px-3 font-medium text-slate-700 text-xs">${escapeHtml(p.principal || '-')}</td>
+            <td class="py-3 px-3 text-xs">
+              ${p.pic ? `<span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium">${escapeHtml(p.pic)}</span>` : '<span class="text-slate-400">-</span>'}
+            </td>
+            <td class="py-3 px-3">
+              <div class="flex items-center justify-center gap-1">${stageButtons}</div>
+            </td>
+            <td class="py-3 px-3">
+              <div class="flex flex-col items-center">
+                <span class="text-xs font-bold text-slate-800">${m.pct.toFixed(1)}%</span>
+                <div class="w-20 bg-slate-100 rounded-full h-1.5 mt-1 overflow-hidden">
+                  <div class="${barColor} h-1.5 rounded-full transition-all duration-200" style="width: ${m.pct}%"></div>
+                </div>
+              </div>
+            </td>
+            <td class="py-3 px-3 text-center">${statusBadge}</td>
+            <td class="py-3 px-3">${remarkHtml}</td>
+            <td class="py-3 px-3 text-center">
+              <button type="button" data-open-id="${escapeHtml(p.id)}"
+                class="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                title="Detail &amp; Edit">
+                <i data-lucide="edit-3" class="w-4 h-4"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // =========================================================
+    // 5. MODAL LOGIC (EDIT / ADD / DELETE / RESET)
+    // =========================================================
+    function openProjectModal(projectId = null) {
+      const modal = document.getElementById('projectModal');
+      const stagesMeta = STAGE_CONFIG[state.division];
+      const list = getActiveList();
+      const proj = projectId ? list.find(p => p.id === projectId) : null;
+
+      document.getElementById('modalTitle').textContent = proj ? `Edit Proyek #${proj.no}` : 'Tambah Proyek Baru';
+      document.getElementById('modalSubtitle').textContent =
+        state.division === 'recruitment' ? 'Recruitment Division' : 'ADM/Finance Division';
+
+      document.getElementById('formProjectId').value = proj ? proj.id : '';
+      document.getElementById('formName').value = proj ? proj.name : '';
+      document.getElementById('formDate').value = proj ? proj.date : '2026-11-11';
+      document.getElementById('formPrincipal').value = proj ? proj.principal : '';
+      document.getElementById('formPic').value = proj ? proj.pic : '';
+      document.getElementById('formActivities').value = proj ? proj.activities : '';
+      document.getElementById('formRemark').value = proj ? proj.remark : 'No issue';
+
+      const deleteBtn = document.getElementById('btnDeleteProject');
+      deleteBtn.classList.toggle('hidden', !proj);
+
+      const currentStages = proj ? proj.stages : [1, 0, 0, 0, 0, 0, 0];
+      const container = document.getElementById('modalStagesContainer');
+      container.innerHTML = stagesMeta.map((st, idx) => `
+        <label class="flex items-center gap-2 p-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer text-xs">
+          <input type="checkbox" name="modalStage" value="${idx}" ${currentStages[idx] ? 'checked' : ''}
+            class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500" />
+          <span class="font-medium text-slate-700">${escapeHtml(st.label)}</span>
+        </label>
+      `).join('');
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('formName').focus();
+    }
+
+    function closeProjectModal() {
+      const modal = document.getElementById('projectModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function exportCurrentCsv() {
+      const list = getFilteredList();
+      const stagesMeta = STAGE_CONFIG[state.division];
+      const headers = ['NO', 'Date', 'Name of Project', 'Principals', 'Person of Incharge', 'Activities', ...stagesMeta.map(s => s.label), 'To Do (%)', 'Completed (%)', 'Status', 'Remark/Issue'];
+
+      const csvEscape = (val) => {
+        const s = String(val ?? '');
+        if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+          return `"${s.replace(/"/g, '""')}"`;
+        }
+        return s;
+      };
+
+      const rows = list.map(p => {
+        const m = calcProjectMetrics(p);
+        return [
+          p.no,
+          p.date,
+          p.name,
+          p.principal,
+          p.pic,
+          p.activities,
+          ...p.stages,
+          (100 - m.pct).toFixed(1),
+          m.pct.toFixed(1),
+          m.status,
+          p.remark
+        ].map(csvEscape).join(',');
+      });
+
+      const csvContent = '\uFEFF' + [headers.map(csvEscape).join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `PT_SOSM_${state.division}_tracking_2026.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('File CSV berhasil diunduh');
+    }
+
+    // =========================================================
+    // 6. EVENT LISTENERS
+    // =========================================================
+    function initEvents() {
+      // Division tabs
+      document.getElementById('tabRecruitment').addEventListener('click', () => {
+        if (state.division === 'recruitment') return;
+        state.division = 'recruitment';
+        resetFiltersOnly();
+        populateFilterDropdowns();
+        renderAll();
+      });
+
+      document.getElementById('tabAdm').addEventListener('click', () => {
+        if (state.division === 'adm') return;
+        state.division = 'adm';
+        resetFiltersOnly();
+        populateFilterDropdowns();
+        renderAll();
+      });
+
+      // Filters
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        state.filters.search = e.target.value;
+        renderAll();
+      });
+
+      document.getElementById('filterPrincipal').addEventListener('change', (e) => {
+        state.filters.principal = e.target.value;
+        renderAll();
+      });
+
+      document.getElementById('filterPic').addEventListener('change', (e) => {
+        state.filters.pic = e.target.value;
+        renderAll();
+      });
+
+      document.getElementById('filterStatus').addEventListener('change', (e) => {
+        state.filters.status = e.target.value;
+        renderAll();
+      });
+
+      document.getElementById('sortSelect').addEventListener('change', (e) => {
+        state.sort = e.target.value;
+        renderAll();
+      });
+
+      // Date, Month, Year filters
+      document.getElementById('filterDay').addEventListener('change', (e) => {
+        state.filters.day = e.target.value;
+        syncDateInputsFromDropdowns();
+        renderAll();
+      });
+
+      document.getElementById('filterMonth').addEventListener('change', (e) => {
+        state.filters.month = e.target.value;
+        syncDateInputsFromDropdowns();
+        renderAll();
+      });
+
+      document.getElementById('filterYear').addEventListener('change', (e) => {
+        state.filters.year = e.target.value;
+        syncDateInputsFromDropdowns();
+        renderAll();
+      });
+
+      document.getElementById('filterExactDate').addEventListener('change', (e) => {
+        const val = e.target.value;
+        state.filters.exactDate = val;
+        if (val) {
+          const parts = parseDateParts(val);
+          state.filters.year = parts.year;
+          state.filters.month = parts.month;
+          state.filters.day = parts.day;
+          document.getElementById('filterYear').value = parts.year;
+          document.getElementById('filterMonth').value = parts.month;
+          document.getElementById('filterDay').value = parts.day;
+          document.getElementById('btnClearDate').classList.remove('hidden');
+        } else {
+          document.getElementById('btnClearDate').classList.add('hidden');
+        }
+        renderAll();
+      });
+
+      document.getElementById('btnClearDate').addEventListener('click', () => {
+        state.filters.exactDate = '';
+        state.filters.year = '';
+        state.filters.month = '';
+        state.filters.day = '';
+        document.getElementById('filterExactDate').value = '';
+        document.getElementById('filterYear').value = '';
+        document.getElementById('filterMonth').value = '';
+        document.getElementById('filterDay').value = '';
+        document.getElementById('btnClearDate').classList.add('hidden');
+        renderAll();
+      });
+
+      document.getElementById('btnResetDateFilter').addEventListener('click', () => {
+        state.filters.exactDate = '';
+        state.filters.year = '';
+        state.filters.month = '';
+        state.filters.day = '';
+        document.getElementById('filterExactDate').value = '';
+        document.getElementById('filterYear').value = '';
+        document.getElementById('filterMonth').value = '';
+        document.getElementById('filterDay').value = '';
+        document.getElementById('btnClearDate').classList.add('hidden');
+        renderAll();
+      });
+
+      // Quick chips
+      document.getElementById('chipUrgent').addEventListener('click', () => {
+        state.filters.onlyUrgent = !state.filters.onlyUrgent;
+        renderAll();
+      });
+
+      document.getElementById('chipIssues').addEventListener('click', () => {
+        state.filters.onlyIssues = !state.filters.onlyIssues;
+        renderAll();
+      });
+
+      document.getElementById('chipNearDone').addEventListener('click', () => {
+        state.filters.onlyNearDone = !state.filters.onlyNearDone;
+        renderAll();
+      });
+
+      document.getElementById('btnResetFilters').addEventListener('click', () => {
+        resetFiltersOnly();
+        renderAll();
+      });
+
+      // KPI quick filters
+      document.getElementById('kpiCardCompleted').addEventListener('click', () => {
+        state.filters.status = state.filters.status === 'Completed' ? '' : 'Completed';
+        document.getElementById('filterStatus').value = state.filters.status;
+        renderAll();
+      });
+
+      document.getElementById('kpiCardInProgress').addEventListener('click', () => {
+        const target = state.division === 'adm' && getActiveList().every(p => calcProjectMetrics(p).status === 'Not Started')
+          ? 'Not Started' : 'In Progress';
+        state.filters.status = state.filters.status === target ? '' : target;
+        document.getElementById('filterStatus').value = state.filters.status;
+        renderAll();
+      });
+
+      document.getElementById('kpiCardIssues').addEventListener('click', () => {
+        state.filters.onlyIssues = !state.filters.onlyIssues;
+        renderAll();
+      });
+
+      // Delegated clicks on table (stage toggle & edit button)
+      document.getElementById('projectTableBody').addEventListener('click', (e) => {
+        const toggleBtn = e.target.closest('[data-toggle-id]');
+        if (toggleBtn) {
+          const id = toggleBtn.getAttribute('data-toggle-id');
+          const idx = Number(toggleBtn.getAttribute('data-stage-idx'));
+          const proj = getActiveList().find(p => p.id === id);
+          if (proj) {
+            proj.stages[idx] = proj.stages[idx] ? 0 : 1;
+            saveState();
+            renderAll();
+            const stageLabel = STAGE_CONFIG[state.division][idx].label;
+            showToast(`Proyek #${proj.no}: ${stageLabel} ${proj.stages[idx] ? 'selesai' : 'dibatalkan'}`);
+          }
+          return;
+        }
+
+        const openBtn = e.target.closest('[data-open-id]');
+        if (openBtn) {
+          openProjectModal(openBtn.getAttribute('data-open-id'));
+        }
+      });
+
+      // Delegated clicks on attention panel
+      document.getElementById('attentionGrid').addEventListener('click', (e) => {
+        const card = e.target.closest('[data-open-id]');
+        if (card) {
+          openProjectModal(card.getAttribute('data-open-id'));
+        }
+      });
+
+      // Header & ADM Quick Add
+      document.getElementById('btnAddProject').addEventListener('click', () => openProjectModal(null));
+      document.getElementById('btnAdmQuickAdd').addEventListener('click', () => {
+        const firstEmpty = state.data.adm.find(p => !p.name.trim());
+        openProjectModal(firstEmpty ? firstEmpty.id : null);
+      });
+      document.getElementById('btnExportCsv').addEventListener('click', exportCurrentCsv);
+
+      // Modal close & submit
+      document.getElementById('btnCloseModal').addEventListener('click', closeProjectModal);
+      document.getElementById('btnCancelModal').addEventListener('click', closeProjectModal);
+      document.getElementById('projectModal').addEventListener('click', (e) => {
+        if (e.target.id === 'projectModal') closeProjectModal();
+      });
+
+      document.getElementById('projectForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('formProjectId').value;
+        const name = document.getElementById('formName').value.trim();
+        const date = document.getElementById('formDate').value || '2026-11-11';
+        const principal = document.getElementById('formPrincipal').value.trim();
+        const pic = document.getElementById('formPic').value.trim();
+        const activities = document.getElementById('formActivities').value.trim();
+        const remark = document.getElementById('formRemark').value.trim();
+        const checkboxes = Array.from(document.querySelectorAll('input[name="modalStage"]'));
+        const stages = checkboxes.map(cb => cb.checked ? 1 : 0);
+
+        const list = getActiveList();
+        if (id) {
+          const proj = list.find(p => p.id === id);
+          if (proj) {
+            proj.name = name;
+            proj.date = date;
+            proj.principal = principal;
+            proj.pic = pic;
+            proj.activities = activities;
+            proj.remark = remark;
+            proj.stages = stages;
+          }
+          showToast('Proyek berhasil diperbarui');
+        } else {
+          const maxNo = list.reduce((max, p) => Math.max(max, p.no), 0);
+          list.push({
+            id: `${state.division}-${Date.now()}`,
+            no: maxNo + 1,
+            date,
+            name,
+            principal,
+            pic,
+            activities,
+            stages,
+            remark
+          });
+          showToast('Proyek baru berhasil ditambahkan');
+        }
+
+        saveState();
+        populateFilterDropdowns();
+        renderAll();
+        closeProjectModal();
+      });
+
+      document.getElementById('btnDeleteProject').addEventListener('click', () => {
+        const id = document.getElementById('formProjectId').value;
+        if (!id) return;
+        const list = getActiveList();
+        const idx = list.findIndex(p => p.id === id);
+        if (idx !== -1) {
+          list.splice(idx, 1);
+          saveState();
+          populateFilterDropdowns();
+          renderAll();
+          closeProjectModal();
+          showToast('Proyek dihapus');
+        }
+      });
+
+      // Reset modal
+      const resetModal = document.getElementById('resetModal');
+      document.getElementById('btnResetData').addEventListener('click', () => {
+        resetModal.classList.remove('hidden');
+        resetModal.classList.add('flex');
+      });
+      document.getElementById('btnCancelReset').addEventListener('click', () => {
+        resetModal.classList.add('hidden');
+        resetModal.classList.remove('flex');
+      });
+      document.getElementById('btnConfirmReset').addEventListener('click', () => {
+        state.data = {
+          recruitment: JSON.parse(JSON.stringify(INITIAL_RECRUITMENT_DATA)),
+          adm: JSON.parse(JSON.stringify(INITIAL_ADM_DATA))
+        };
+        saveState();
+        resetFiltersOnly();
+        populateFilterDropdowns();
+        renderAll();
+        resetModal.classList.add('hidden');
+        resetModal.classList.remove('flex');
+        showToast('Data dikembalikan ke file Excel awal');
+      });
+    }
+
+    function resetFiltersOnly() {
+      state.filters = {
+        search: '',
+        principal: '',
+        pic: '',
+        status: '',
+        year: '',
+        month: '',
+        day: '',
+        exactDate: '',
+        onlyUrgent: false,
+        onlyIssues: false,
+        onlyNearDone: false
+      };
+      document.getElementById('searchInput').value = '';
+      document.getElementById('filterPrincipal').value = '';
+      document.getElementById('filterPic').value = '';
+      document.getElementById('filterStatus').value = '';
+      document.getElementById('filterYear').value = '';
+      document.getElementById('filterMonth').value = '';
+      document.getElementById('filterDay').value = '';
+      document.getElementById('filterExactDate').value = '';
+      document.getElementById('btnClearDate').classList.add('hidden');
+    }
+
+    // Boot
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedState();
+      populateFilterDropdowns();
+      initEvents();
+      renderAll();
+    });
+  </script>
+</body>
+
+</html>
