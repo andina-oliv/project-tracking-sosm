@@ -58,10 +58,65 @@
         transform: translateY(0);
       }
     }
+
+    /* Loading Screen Styles */
+    #loadingScreen {
+      transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #loadingScreen.loaded {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% {
+        box-shadow: 0 0 25px rgba(59, 130, 246, 0.25);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 35px rgba(20, 184, 166, 0.45);
+        transform: scale(1.03);
+      }
+    }
+
+    .logo-glow {
+      animation: pulseGlow 2.2s infinite ease-in-out;
+    }
   </style>
 </head>
 
 <body class="min-h-screen flex flex-col">
+
+  <!-- Modern Loading Screen -->
+  <div id="loadingScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 text-white select-none">
+    <div class="flex flex-col items-center max-w-sm px-6 text-center">
+      <!-- Animated Logo Container -->
+      <div class="w-20 h-20 rounded-2xl bg-white flex items-center justify-center p-2.5 shadow-2xl logo-glow border border-slate-700/80 mb-5">
+        <img src="images.jpeg" alt="Logo PT SOSM" class="w-full h-full object-contain rounded-xl" />
+      </div>
+
+      <!-- App Title & Subtitle -->
+      <h2 class="text-lg sm:text-xl font-bold tracking-tight text-white mb-1">
+        PT. SOSM
+      </h2>
+      <p class="text-xs text-slate-400 font-medium tracking-wide uppercase mb-6">
+        Project Tracking Dashboard 2026
+      </p>
+
+      <!-- Progress Track & Animated Bar -->
+      <div class="w-56 h-1.5 bg-slate-800 rounded-full overflow-hidden shadow-inner mb-3">
+        <div id="loadingProgressBar" class="h-full bg-gradient-to-r from-teal-400 to-blue-500 rounded-full transition-all duration-500 ease-out" style="width: 20%"></div>
+      </div>
+
+      <!-- Loading Status Text -->
+      <div class="flex items-center gap-2 text-xs text-slate-400">
+        <span class="inline-block w-2 h-2 rounded-full bg-teal-400 animate-ping"></span>
+        <span id="loadingStatusText">Menyiapkan dashboard...</span>
+      </div>
+    </div>
+  </div>
 
   <!-- Top Navigation Header -->
   <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
@@ -1782,13 +1837,52 @@
       document.getElementById('btnClearDate').classList.add('hidden');
     }
 
+    // Loading Screen Manager
+    let isLoaderDismissed = false;
+    function hideLoadingScreen() {
+      if (isLoaderDismissed) return;
+      isLoaderDismissed = true;
+
+      const loader = document.getElementById('loadingScreen');
+      const progressBar = document.getElementById('loadingProgressBar');
+      const statusText = document.getElementById('loadingStatusText');
+
+      if (progressBar) progressBar.style.width = '100%';
+      if (statusText) statusText.textContent = 'Dashboard siap!';
+
+      setTimeout(() => {
+        if (loader) {
+          loader.classList.add('loaded');
+          setTimeout(() => {
+            loader.style.display = 'none';
+          }, 520);
+        }
+      }, 350);
+    }
+
     // Boot
     window.addEventListener('DOMContentLoaded', () => {
+      const progressBar = document.getElementById('loadingProgressBar');
+      if (progressBar) progressBar.style.width = '60%';
+
       loadSavedState();
       populateFilterDropdowns();
       initEvents();
       renderAll();
+
+      if (progressBar) progressBar.style.width = '90%';
+
+      // Smooth pleasant display so loading screen is seen, then gracefully reveals dashboard
+      setTimeout(hideLoadingScreen, 700);
     });
+
+    // Fallback handlers
+    window.addEventListener('load', () => {
+      setTimeout(hideLoadingScreen, 500);
+    });
+
+    // Safety timeout: never get stuck
+    setTimeout(hideLoadingScreen, 2800);
   </script>
 </body>
 
