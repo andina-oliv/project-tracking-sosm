@@ -541,7 +541,7 @@
       </div>
     </section>
 
-    <!-- Division Navigation Bar (Navigasi Antar Halaman / Divisi) -->
+    <!-- Division Navigation Bar -->
     <section aria-label="Division Page Navigation"
       class="bg-white rounded-xl p-4 shadow-sm border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div class="flex items-center gap-3">
@@ -766,14 +766,14 @@
     // =========================================================
     const STORAGE_KEY = 'pt_sosm_tracking_dashboard_v1';
 
-    const MONTH_NAMES_ID = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    const MONTH_NAMES_EN = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
     ];
 
-    const MONTH_NAMES_SHORT_ID = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    const MONTH_NAMES_SHORT_EN = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
 
     function parseDateParts(dateStr) {
@@ -813,7 +813,7 @@
       const parts = parseDateParts(dateStr);
       if (!parts.year) return dateStr || '-';
       const mIndex = parseInt(parts.month, 10) - 1;
-      const monthName = MONTH_NAMES_SHORT_ID[mIndex] || parts.month;
+      const monthName = MONTH_NAMES_SHORT_EN[mIndex] || parts.month;
       return `${parseInt(parts.day, 10)} ${monthName} ${parts.year}`;
     }
 
@@ -930,14 +930,14 @@
           const hay = `${p.no} ${p.date || ''} ${dateDisp} ${p.name} ${p.principal} ${p.pic} ${p.activities} ${p.remark}`.toLowerCase();
           if (!hay.includes(q)) return false;
         }
-        if (f.principal && (p.principal || '(Belum Diisi)') !== f.principal) return false;
+        if (f.principal && (p.principal || '(Unassigned)') !== f.principal) return false;
         if (f.pic) {
           if (f.pic.startsWith('IND:')) {
             const target = f.pic.slice(4).toLowerCase();
             const members = (p.pic || '').split('/').map(s => s.trim().toLowerCase());
             if (!members.includes(target)) return false;
           } else {
-            if ((p.pic || '(Belum Diisi)') !== f.pic) return false;
+            if ((p.pic || '(Unassigned)') !== f.pic) return false;
           }
         }
         if (f.status && m.status !== f.status) return false;
@@ -982,27 +982,27 @@
       const exactDateInput = document.getElementById('filterExactDate');
 
       // Populate Principal
-      const principals = [...new Set(list.map(p => p.principal || '(Belum Diisi)'))].sort();
+      const principals = [...new Set(list.map(p => p.principal || '(Unassigned)'))].sort();
       const currentP = state.filters.principal;
-      principalSelect.innerHTML = '<option value="">Semua Principal</option>' +
+      principalSelect.innerHTML = '<option value="">All Principals</option>' +
         principals.map(pr => `<option value="${escapeHtml(pr)}">${escapeHtml(pr)}</option>`).join('');
       if (principals.includes(currentP)) principalSelect.value = currentP;
       else state.filters.principal = '';
 
       // Populate PIC
-      const picTeams = [...new Set(list.map(p => p.pic || '(Belum Diisi)'))].sort();
+      const picTeams = [...new Set(list.map(p => p.pic || '(Unassigned)'))].sort();
       const individuals = [...new Set(
         list.flatMap(p => (p.pic || '').split('/').map(s => s.trim()).filter(Boolean))
       )].sort();
 
       const currentPic = state.filters.pic;
-      let picHtml = '<option value="">Semua PIC</option>';
+      let picHtml = '<option value="">All PICs</option>';
       if (individuals.length > 0) {
-        picHtml += '<optgroup label="PIC Individu (Termasuk Tim)">' +
-          individuals.map(ind => `<option value="IND:${escapeHtml(ind)}">${escapeHtml(ind)} (Semua Proyek)</option>`).join('') +
+        picHtml += '<optgroup label="Individual PIC (Including Teams)">' +
+          individuals.map(ind => `<option value="IND:${escapeHtml(ind)}">${escapeHtml(ind)} (All Projects)</option>`).join('') +
           '</optgroup>';
       }
-      picHtml += '<optgroup label="Tim / Kolom PIC Persis">' +
+      picHtml += '<optgroup label="Exact PIC / Team">' +
         picTeams.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('') +
         '</optgroup>';
       picSelect.innerHTML = picHtml;
@@ -1013,17 +1013,17 @@
       const dataYears = list.map(p => parseDateParts(p.date).year).filter(Boolean);
       const allYears = [...new Set(['2026', ...dataYears])].sort().reverse();
       const currentYear = state.filters.year;
-      yearSelect.innerHTML = '<option value="">Semua Tahun</option>' +
+      yearSelect.innerHTML = '<option value="">All Years</option>' +
         allYears.map(y => `<option value="${escapeHtml(y)}">${escapeHtml(y)}</option>`).join('');
       if (allYears.includes(currentYear)) yearSelect.value = currentYear;
       else if (!currentYear) yearSelect.value = '';
 
       // Populate Day Dropdown (01 to 31)
       if (daySelect.options.length <= 1) {
-        let dayHtml = '<option value="">Semua Tanggal (1–31)</option>';
+        let dayHtml = '<option value="">All Days (1–31)</option>';
         for (let d = 1; d <= 31; d++) {
           const val = String(d).padStart(2, '0');
-          dayHtml += `<option value="${val}">Tanggal ${val}</option>`;
+          dayHtml += `<option value="${val}">Day ${val}</option>`;
         }
         daySelect.innerHTML = dayHtml;
       }
@@ -1087,13 +1087,13 @@
       const f = state.filters;
       const hasDateFilter = Boolean(f.exactDate || f.year || f.month || f.day);
       if (hasDateFilter) {
-        let label = 'Periode: ';
+        let label = 'Period: ';
         if (f.exactDate) {
           label += formatDateDisplay(f.exactDate);
         } else {
           const parts = [];
-          if (f.day) parts.push(`Tgl ${f.day}`);
-          if (f.month) parts.push(MONTH_NAMES_ID[parseInt(f.month, 10) - 1]);
+          if (f.day) parts.push(`Day ${f.day}`);
+          if (f.month) parts.push(MONTH_NAMES_EN[parseInt(f.month, 10) - 1]);
           if (f.year) parts.push(f.year);
           label += parts.join(' ');
         }
@@ -1161,34 +1161,34 @@
 
       document.getElementById('kpiTotal').textContent = count;
       document.getElementById('kpiTotalSub').textContent =
-        count === totalAll ? `Seluruh proyek (${totalAll})` : `Terfilter dari ${totalAll} proyek`;
+        count === totalAll ? `All projects (${totalAll})` : `Filtered from ${totalAll} projects`;
 
       document.getElementById('kpiCompleted').textContent = completed;
-      document.getElementById('kpiCompletedSub').textContent = `${completedPct}% selesai penuh`;
+      document.getElementById('kpiCompletedSub').textContent = `${completedPct}% completed`;
 
       if (state.division === 'adm' && inProgress === 0 && notStarted > 0) {
         document.getElementById('kpiProgressLabel').textContent = 'Not Started';
         document.getElementById('kpiInProgress').textContent = notStarted;
-        document.getElementById('kpiInProgressSub').textContent = 'Belum ada proyek dimulai';
+        document.getElementById('kpiInProgressSub').textContent = 'No projects started yet';
       } else {
         document.getElementById('kpiProgressLabel').textContent = 'In Progress';
         document.getElementById('kpiInProgress').textContent = inProgress;
         const inProgPct = count > 0 ? ((inProgress / count) * 100).toFixed(1) : '0.0';
         document.getElementById('kpiInProgressSub').textContent =
-          notStarted > 0 ? `${inProgPct}% proses • ${notStarted} belum mulai` : `${inProgPct}% sedang berjalan`;
+          notStarted > 0 ? `${inProgPct}% in progress • ${notStarted} not started` : `${inProgPct}% in progress`;
       }
 
       document.getElementById('kpiAvgProgress').textContent = `${avg.toFixed(1)}%`;
       document.getElementById('kpiAvgBar').style.width = `${Math.min(100, Math.max(0, avg))}%`;
 
       document.getElementById('kpiIssues').textContent = issues;
-      document.getElementById('kpiIssuesSub').textContent = `${urgents} proyek berlabel URGENT`;
+      document.getElementById('kpiIssuesSub').textContent = `${urgents} projects flagged URGENT`;
     }
 
     function renderCharts(list) {
       const stagesMeta = STAGE_CONFIG[state.division];
       document.getElementById('chartStageTitle').textContent =
-        state.division === 'recruitment' ? 'Pipeline Tahapan Rekrutmen' : 'Pipeline Tahapan ADM/Finance';
+        state.division === 'recruitment' ? 'Recruitment Stage Pipeline' : 'ADM/Finance Stage Pipeline';
 
       // 1. Stage Funnel Chart
       const stageCounts = stagesMeta.map((_, idx) =>
@@ -1202,7 +1202,7 @@
         data: {
           labels: stageLabels,
           datasets: [{
-            label: 'Jumlah Proyek',
+            label: 'Number of Projects',
             data: stageCounts,
             backgroundColor: [
               '#2563eb', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#059669'
@@ -1221,7 +1221,7 @@
               callbacks: {
                 label: (ctx) => {
                   const pct = list.length > 0 ? ((ctx.raw / list.length) * 100).toFixed(1) : '0.0';
-                  return ` ${ctx.raw} proyek (${pct}%)`;
+                  return ` ${ctx.raw} projects (${pct}%)`;
                 }
               }
             }
@@ -1243,7 +1243,7 @@
       // 2. Principal Distribution Chart
       const principalMap = {};
       list.forEach(p => {
-        const key = (p.principal || '').trim() || 'Belum Diisi';
+        const key = (p.principal || '').trim() || 'Unassigned';
         if (!principalMap[key]) principalMap[key] = { completed: 0, inProgress: 0, notStarted: 0, total: 0 };
         const m = calcProjectMetrics(p);
         if (m.status === 'Completed') principalMap[key].completed++;
@@ -1300,7 +1300,7 @@
       // 3. PIC Workload & Avg Completion Chart
       const picMap = {};
       list.forEach(p => {
-        const key = (p.pic || '').trim() || 'Belum Diisi';
+        const key = (p.pic || '').trim() || 'Unassigned';
         if (!picMap[key]) picMap[key] = { count: 0, sumPct: 0 };
         picMap[key].count++;
         picMap[key].sumPct += calcProjectMetrics(p).pct;
@@ -1314,14 +1314,14 @@
           labels: picSorted.map(([k]) => k),
           datasets: [
             {
-              label: 'Jumlah Proyek',
+              label: 'Number of Projects',
               data: picSorted.map(([, v]) => v.count),
               backgroundColor: '#3b82f6',
               borderRadius: 6,
               yAxisID: 'y'
             },
             {
-              label: 'Rata-rata Progres (%)',
+              label: 'Average Progress (%)',
               data: picSorted.map(([, v]) => v.count > 0 ? Number((v.sumPct / v.count).toFixed(1)) : 0),
               type: 'line',
               borderColor: '#0d9488',
@@ -1345,7 +1345,7 @@
               position: 'left',
               ticks: { precision: 0, font: { size: 11 } },
               grid: { color: '#f1f5f9' },
-              title: { display: true, text: 'Proyek', font: { size: 10 } }
+              title: { display: true, text: 'Projects', font: { size: 10 } }
             },
             y1: {
               beginAtZero: true,
@@ -1380,7 +1380,7 @@
       grid.innerHTML = urgentOrCritical.slice(0, 6).map(({ p, m }) => {
         const badge = m.isUrgent
           ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700 uppercase">Urgent</span>'
-          : '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 uppercase">Hambatan</span>';
+          : '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700 uppercase">Issue</span>';
         return `
           <button type="button" data-open-id="${escapeHtml(p.id)}"
             class="text-left p-3.5 rounded-xl border ${m.isUrgent ? 'border-rose-200 bg-rose-50/40 hover:bg-rose-50' : 'border-amber-200 bg-amber-50/40 hover:bg-amber-50'} transition-all flex flex-col justify-between gap-2">
@@ -1412,11 +1412,11 @@
 
       document.getElementById('tableTitle').textContent =
         state.division === 'recruitment'
-          ? `Daftar Proyek — Recruitment Division (${list.length})`
-          : `Daftar Proyek — ADM/Finance Division (${list.length})`;
+          ? `Project List — Recruitment Division (${list.length})`
+          : `Project List — ADM/Finance Division (${list.length})`;
 
       document.getElementById('tableStageHeader').textContent =
-        `Tahapan (${stagesMeta.map(s => s.short).join(' · ')})`;
+        `Stages (${stagesMeta.map(s => s.short).join(' · ')})`;
 
       if (list.length === 0) {
         tbody.innerHTML = '';
@@ -1466,7 +1466,7 @@
             <button type="button"
               data-toggle-id="${escapeHtml(p.id)}"
               data-stage-idx="${idx}"
-              title="${escapeHtml(st.label)}: ${active ? 'Selesai' : 'Belum'}"
+              title="${escapeHtml(st.label)}: ${active ? 'Done' : 'Pending'}"
               class="stage-btn w-8 h-7 rounded-md text-[10px] font-bold border ${active
               ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
               : 'bg-white text-slate-400 border-slate-200 hover:border-blue-400 hover:text-blue-600'
@@ -1484,7 +1484,7 @@
 
         const nameDisplay = (p.name || '').trim()
           ? `<div class="font-semibold text-slate-900 leading-snug">${escapeHtml(p.name)}${urgentTag}</div>`
-          : `<div class="italic text-slate-400">Slot #${p.no} — Belum ada nama proyek</div>`;
+          : `<div class="italic text-slate-400">Slot #${p.no} — No project name yet</div>`;
 
         return `
           <tr class="hover:bg-slate-50/80 transition-colors">
@@ -1519,7 +1519,7 @@
             <td class="py-3 px-3 text-center align-top">
               <button type="button" data-open-id="${escapeHtml(p.id)}"
                 class="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                title="Detail &amp; Edit">
+                title="Details &amp; Edit">
                 <i data-lucide="edit-3" class="w-4 h-4"></i>
               </button>
             </td>
@@ -1543,11 +1543,11 @@
 
       if (infoEl) {
         if (totalItems === 0) {
-          infoEl.textContent = 'Tidak ada proyek';
+          infoEl.textContent = 'No projects found';
         } else if (isAll) {
-          infoEl.innerHTML = `Menampilkan seluruh <strong>${totalItems}</strong> proyek`;
+          infoEl.innerHTML = `Showing all <strong>${totalItems}</strong> projects`;
         } else {
-          infoEl.innerHTML = `Menampilkan <strong>${startIndex + 1}</strong>–<strong>${endIndex}</strong> dari <strong>${totalItems}</strong> proyek <span class="text-slate-400 font-normal ml-1">(Halaman ${currentPage} dari ${totalPages})</span>`;
+          infoEl.innerHTML = `Showing <strong>${startIndex + 1}</strong>–<strong>${endIndex}</strong> of <strong>${totalItems}</strong> projects <span class="text-slate-400 font-normal ml-1">(Page ${currentPage} of ${totalPages})</span>`;
         }
       }
 
@@ -1622,15 +1622,15 @@
       const admCount = state.data.adm.length;
 
       if (state.division === 'recruitment') {
-        statusEl.innerHTML = `Halaman 1: <strong>Recruitment Division</strong> (${recCount} Proyek)`;
+        statusEl.innerHTML = `Page 1: <strong>Recruitment Division</strong> (${recCount} Projects)`;
         prevBtn.disabled = true;
         prevLabel.textContent = 'Previous Page';
         nextBtn.disabled = false;
-        nextLabel.textContent = `Next Page (ADM/Finance - ${admCount} Proyek)`;
+        nextLabel.textContent = `Next Page (ADM/Finance - ${admCount} Projects)`;
       } else {
-        statusEl.innerHTML = `Halaman 2: <strong>ADM/Finance Division</strong> (${admCount} Proyek)`;
+        statusEl.innerHTML = `Page 2: <strong>ADM/Finance Division</strong> (${admCount} Projects)`;
         prevBtn.disabled = false;
-        prevLabel.textContent = `Previous Page (Recruitment - ${recCount} Proyek)`;
+        prevLabel.textContent = `Previous Page (Recruitment - ${recCount} Projects)`;
         nextBtn.disabled = true;
         nextLabel.textContent = 'Next Page';
       }
@@ -1645,7 +1645,7 @@
       const list = getActiveList();
       const proj = projectId ? list.find(p => p.id === projectId) : null;
 
-      document.getElementById('modalTitle').textContent = proj ? `Edit Proyek #${proj.no}` : 'Tambah Proyek Baru';
+      document.getElementById('modalTitle').textContent = proj ? `Edit Project #${proj.no}` : 'Add New Project';
       document.getElementById('modalSubtitle').textContent =
         state.division === 'recruitment' ? 'Recruitment Division' : 'ADM/Finance Division';
 
@@ -1721,7 +1721,7 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showToast('File CSV berhasil diunduh');
+      showToast('CSV file downloaded successfully');
     }
 
     // =========================================================
@@ -1954,7 +1954,7 @@
           populateFilterDropdowns();
           renderAll();
           window.scrollTo({ top: 0, behavior: 'smooth' });
-          showToast('Beralih ke Halaman Recruitment Division');
+          showToast('Switched to Recruitment Division');
         }
       });
 
@@ -1966,7 +1966,7 @@
           populateFilterDropdowns();
           renderAll();
           window.scrollTo({ top: 0, behavior: 'smooth' });
-          showToast('Beralih ke Halaman ADM/Finance Division');
+          showToast('Switched to ADM/Finance Division');
         }
       });
 
@@ -1982,7 +1982,7 @@
             saveState();
             renderAll();
             const stageLabel = STAGE_CONFIG[state.division][idx].label;
-            showToast(`Proyek #${proj.no}: ${stageLabel} ${proj.stages[idx] ? 'selesai' : 'dibatalkan'}`);
+            showToast(`Project #${proj.no}: ${stageLabel} ${proj.stages[idx] ? 'completed' : 'unchecked'}`);
           }
           return;
         }
@@ -2040,7 +2040,7 @@
             proj.remark = remark;
             proj.stages = stages;
           }
-          showToast('Proyek berhasil diperbarui');
+          showToast('Project updated successfully');
         } else {
           const maxNo = list.reduce((max, p) => Math.max(max, p.no), 0);
           list.push({
@@ -2054,7 +2054,7 @@
             stages,
             remark
           });
-          showToast('Proyek baru berhasil ditambahkan');
+          showToast('New project added successfully');
         }
 
         saveState();
@@ -2074,7 +2074,7 @@
           populateFilterDropdowns();
           renderAll();
           closeProjectModal();
-          showToast('Proyek dihapus');
+          showToast('Project deleted');
         }
       });
 
@@ -2099,7 +2099,7 @@
         renderAll();
         resetModal.classList.add('hidden');
         resetModal.classList.remove('flex');
-        showToast('Data dikembalikan ke file Excel awal');
+        showToast('Data reset to initial Excel data');
       });
     }
 
@@ -2129,7 +2129,7 @@
       document.getElementById('btnClearDate').classList.add('hidden');
     }
 
-    // Loading Screen Manager (Durasi 2 Detik)
+    // Loading Screen Manager (2-Second Duration)
     let isLoaderDismissed = false;
     function hideLoadingScreen() {
       if (isLoaderDismissed) return;
@@ -2140,7 +2140,7 @@
       const statusText = document.getElementById('loadingStatusText');
 
       if (progressBar) progressBar.style.width = '100%';
-      if (statusText) statusText.textContent = 'Dashboard siap!';
+      if (statusText) statusText.textContent = 'Dashboard ready!';
 
       setTimeout(() => {
         if (loader) {
@@ -2152,7 +2152,7 @@
       }, 200);
     }
 
-    // Boot & Tahapan Animasi 2 Detik
+    // Boot & 2-Second Animation Stages
     window.addEventListener('DOMContentLoaded', () => {
       loadSavedState();
       populateFilterDropdowns();
@@ -2162,29 +2162,29 @@
       const progressBar = document.getElementById('loadingProgressBar');
       const statusText = document.getElementById('loadingStatusText');
 
-      // 0.5s: Progres tahap 1
+      // 0.5s: Stage 1 progress
       setTimeout(() => {
         if (progressBar) progressBar.style.width = '45%';
-        if (statusText) statusText.textContent = 'Memuat data proyek & tahapan...';
+        if (statusText) statusText.textContent = 'Loading project data & stages...';
       }, 500);
 
-      // 1.1s: Progres tahap 2
+      // 1.1s: Stage 2 progress
       setTimeout(() => {
         if (progressBar) progressBar.style.width = '80%';
-        if (statusText) statusText.textContent = 'Menginisialisasi grafik & analitik...';
+        if (statusText) statusText.textContent = 'Initializing charts & analytics...';
       }, 1100);
 
-      // 1.7s: Progres tahap 3 (Selesai 100%)
+      // 1.7s: Stage 3 progress (100% Complete)
       setTimeout(() => {
         if (progressBar) progressBar.style.width = '100%';
-        if (statusText) statusText.textContent = 'Dashboard siap!';
+        if (statusText) statusText.textContent = 'Dashboard ready!';
       }, 1700);
 
-      // Tepat 2 detik (2000ms): Tutup loading screen dengan fade out halus
+      // Exactly 2 seconds (2000ms): Close loading screen with smooth fade out
       setTimeout(hideLoadingScreen, 2000);
     });
 
-    // Fallback cadangan jika ada aset yang tertunda
+    // Fallback in case of pending assets
     setTimeout(hideLoadingScreen, 3500);
   </script>
 </body>
