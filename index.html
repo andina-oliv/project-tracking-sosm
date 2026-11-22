@@ -9,6 +9,10 @@
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <!-- Export Libraries (Excel & PDF) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     body {
       font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -90,14 +94,12 @@
 <body class="min-h-screen flex flex-col">
 
   <!-- Modern Loading Screen -->
-  <div id="loadingScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 text-white select-none">
+  <!-- <div id="loadingScreen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 text-white select-none">
     <div class="flex flex-col items-center max-w-sm px-6 text-center">
-      <!-- Animated Logo Container -->
       <div class="w-20 h-20 rounded-2xl bg-white flex items-center justify-center p-2.5 shadow-2xl logo-glow border border-slate-700/80 mb-5">
         <img src="images.jpeg" alt="Logo PT SOSM" class="w-full h-full object-contain rounded-xl" />
       </div>
 
-      <!-- App Title & Subtitle -->
       <h2 class="text-lg sm:text-xl font-bold tracking-tight text-white mb-1">
         PT. SOSM
       </h2>
@@ -105,21 +107,19 @@
         Project Tracking Dashboard
       </p>
 
-      <!-- Progress Track & Animated Bar -->
       <div class="w-56 h-1.5 bg-slate-800 rounded-full overflow-hidden shadow-inner mb-3">
         <div id="loadingProgressBar" class="h-full bg-gradient-to-r from-teal-400 to-blue-500 rounded-full transition-all duration-500 ease-out" style="width: 20%"></div>
       </div>
 
-      <!-- Loading Status Text -->
       <div class="flex items-center gap-2 text-xs text-slate-400">
         <span class="inline-block w-2 h-2 rounded-full bg-teal-400 animate-ping"></span>
         <span id="loadingStatusText">Preparing dashboard...</span>
       </div>
     </div>
-  </div>
+  </div> -->
 
   <!-- Top Navigation Header -->
-  <header class="bg-gray-700 text-white shadow-md sticky top-0 z-30 border-b border-gray-600">
+  <header class="bg-blue-700 text-white shadow-md sticky top-0 z-30 border-b border-gray-600">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div class="flex items-center gap-3">
@@ -158,6 +158,16 @@
             class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-900 border border-gray-600 text-gray-100 text-xs sm:text-sm font-medium transition-colors">
             <i data-lucide="download" class="w-4 h-4"></i>
             <span class="hidden sm:inline">Export CSV</span>
+          </button>
+          <button type="button" id="btnExportExcel"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-emerald-600 border border-gray-600 text-gray-100 text-xs sm:text-sm font-medium transition-colors">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Export Excel</span>
+          </button>
+          <button type="button" id="btnExportPdf"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-rose-600 border border-gray-600 text-gray-100 text-xs sm:text-sm font-medium transition-colors">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Export PDF</span>
           </button>
           <button type="button" id="btnResetData" title="Reset to Initial Excel Data"
             class="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gray-800 hover:bg-rose-900/60 border border-gray-600 hover:border-rose-500 text-gray-200 hover:text-rose-200 text-xs sm:text-sm font-medium transition-colors">
@@ -1724,6 +1734,227 @@
       showToast('CSV file downloaded successfully');
     }
 
+    function exportCurrentExcel() {
+      const list = getFilteredList();
+      if (!list || list.length === 0) {
+        showToast('No projects to export');
+        return;
+      }
+
+      const stagesMeta = STAGE_CONFIG[state.division];
+      const headers = [
+        'NO',
+        'Date',
+        'Project Name',
+        'Principal',
+        'PIC',
+        'Activities / Field Progress',
+        ...stagesMeta.map(s => `${s.label} (${s.short})`),
+        'To Do (%)',
+        'Completed (%)',
+        'Status',
+        'Remark / Issue'
+      ];
+
+      const rows = list.map(p => {
+        const m = calcProjectMetrics(p);
+        return [
+          p.no,
+          p.date || '-',
+          p.name || `Slot #${p.no} — No project name yet`,
+          p.principal || '-',
+          p.pic || '-',
+          p.activities || '',
+          ...p.stages.map(st => (st ? 1 : 0)),
+          Number((100 - m.pct).toFixed(1)),
+          Number(m.pct.toFixed(1)),
+          m.status,
+          p.remark || '-'
+        ];
+      });
+
+      const fileName = `PT_SOSM_${state.division}_tracking_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+      // Check if SheetJS (XLSX) library is available
+      if (typeof XLSX !== 'undefined') {
+        try {
+          const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+          // Set column widths for optimal display
+          ws['!cols'] = [
+            { wch: 6 },  // NO
+            { wch: 14 }, // Date
+            { wch: 45 }, // Project Name
+            { wch: 25 }, // Principal
+            { wch: 18 }, // PIC
+            { wch: 45 }, // Activities
+            ...stagesMeta.map(() => ({ wch: 16 })), // Stages
+            { wch: 12 }, // To Do (%)
+            { wch: 15 }, // Completed (%)
+            { wch: 14 }, // Status
+            { wch: 40 }  // Remark / Issue
+          ];
+
+          const wb = XLSX.utils.book_new();
+          const sheetName = state.division === 'recruitment' ? 'Recruitment Division' : 'ADM Finance Division';
+          XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
+          XLSX.writeFile(wb, fileName);
+          showToast('Excel file downloaded successfully');
+          return;
+        } catch (err) {
+          console.error('SheetJS export error, falling back to HTML spreadsheet:', err);
+        }
+      }
+
+      // Safe fallback if SheetJS is unavailable or offline: XML HTML spreadsheet (.xls)
+      try {
+        let tableHtml = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+        tableHtml += '<head><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Tracking</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--><meta charset="utf-8"></head><body>';
+        tableHtml += '<table border="1">';
+        tableHtml += '<tr style="background:#374151;color:#ffffff;font-weight:bold;">' + headers.map(h => `<th>${escapeHtml(h)}</th>`).join('') + '</tr>';
+        rows.forEach(r => {
+          tableHtml += '<tr>' + r.map(c => `<td>${escapeHtml(String(c))}</td>`).join('') + '</tr>';
+        });
+        tableHtml += '</table></body></html>';
+
+        const blob = new Blob([tableHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName.replace('.xlsx', '.xls');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Excel (.xls) file downloaded successfully');
+      } catch (e) {
+        console.error('Excel fallback error:', e);
+        showToast('Failed to export Excel file');
+      }
+    }
+
+    function exportCurrentPdf() {
+      const list = getFilteredList();
+      if (!list || list.length === 0) {
+        showToast('No projects to export');
+        return;
+      }
+
+      const divisionTitle = state.division === 'recruitment' ? 'Recruitment Division' : 'ADM/Finance Division';
+      const stagesMeta = STAGE_CONFIG[state.division];
+      const fileName = `PT_SOSM_${state.division}_tracking_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+      // Check if jsPDF & autoTable are available
+      const jspdfModule = window.jspdf;
+      if (jspdfModule && jspdfModule.jsPDF) {
+        try {
+          const doc = new jspdfModule.jsPDF({
+            orientation: 'landscape',
+            unit: 'pt',
+            format: 'a4'
+          });
+
+          // Document Header Info
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(13);
+          doc.setTextColor(30, 41, 59);
+          doc.text('PT. SOSM — Project Tracking Report', 40, 36);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(9);
+          doc.setTextColor(100, 116, 139);
+          const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+          doc.text(`${divisionTitle} • Generated: ${dateStr} • Filtered Projects: ${list.length}`, 40, 50);
+
+          // Table Headers
+          const stageShortHeaders = stagesMeta.map(s => s.short);
+          const tableHead = [
+            ['No', 'Date', 'Project Name', 'Principal', 'PIC', 'Activities / Field Progress', ...stageShortHeaders, 'Prog', 'Status', 'Remark / Issue']
+          ];
+
+          // Table Body
+          const tableBody = list.map(p => {
+            const m = calcProjectMetrics(p);
+            return [
+              String(p.no),
+              p.date || '-',
+              p.name || `Slot #${p.no}`,
+              p.principal || '-',
+              p.pic || '-',
+              p.activities || '',
+              ...p.stages.map(st => (st ? '1' : '-')),
+              `${m.pct.toFixed(0)}%`,
+              m.status,
+              p.remark || '-'
+            ];
+          });
+
+          doc.autoTable({
+            head: tableHead,
+            body: tableBody,
+            startY: 60,
+            theme: 'grid',
+            margin: { left: 40, right: 40, top: 60, bottom: 40 },
+            styles: {
+              fontSize: 7,
+              cellPadding: 3,
+              overflow: 'linebreak',
+              lineColor: [226, 232, 240],
+              lineWidth: 0.5,
+              textColor: [30, 41, 59]
+            },
+            headStyles: {
+              fillColor: [55, 65, 81],
+              textColor: [255, 255, 255],
+              fontSize: 7,
+              fontStyle: 'bold',
+              halign: 'center'
+            },
+            columnStyles: {
+              0: { cellWidth: 22, halign: 'center' },  // No
+              1: { cellWidth: 46, halign: 'center' },  // Date
+              2: { cellWidth: 120 },                   // Name
+              3: { cellWidth: 68 },                    // Principal
+              4: { cellWidth: 48 },                    // PIC
+              5: { cellWidth: 125 },                   // Activities
+              6: { cellWidth: 19, halign: 'center' },  // Stg 0
+              7: { cellWidth: 19, halign: 'center' },  // Stg 1
+              8: { cellWidth: 19, halign: 'center' },  // Stg 2
+              9: { cellWidth: 19, halign: 'center' },  // Stg 3
+              10: { cellWidth: 19, halign: 'center' }, // Stg 4
+              11: { cellWidth: 19, halign: 'center' }, // Stg 5
+              12: { cellWidth: 19, halign: 'center' }, // Stg 6
+              13: { cellWidth: 32, halign: 'center' }, // Progress
+              14: { cellWidth: 48, halign: 'center' }, // Status
+              15: { cellWidth: 'auto' }                // Remark
+            },
+            alternateRowStyles: {
+              fillColor: [248, 250, 252]
+            },
+            didDrawPage: (data) => {
+              const totalPages = doc.internal.getNumberOfPages();
+              doc.setFontSize(8);
+              doc.setTextColor(148, 163, 184);
+              const pageText = `Page ${data.pageNumber} of ${totalPages}`;
+              const pageWidth = doc.internal.pageSize.getWidth();
+              const pageHeight = doc.internal.pageSize.getHeight();
+              doc.text(pageText, pageWidth - 40 - doc.getTextWidth(pageText), pageHeight - 20);
+              doc.text('PT. SOSM — Project Tracking System (Confidential)', 40, pageHeight - 20);
+            }
+          });
+
+          doc.save(fileName);
+          showToast('PDF file downloaded successfully');
+          return;
+        } catch (err) {
+          console.error('jsPDF export error, falling back to window.print():', err);
+        }
+      }
+
+      // Safe fallback if jsPDF is unavailable: Print / Save to PDF
+      showToast('Preparing print/PDF preview...');
+      window.print();
+    }
+
     // =========================================================
     // 6. EVENT LISTENERS
     // =========================================================
@@ -2008,6 +2239,8 @@
         openProjectModal(firstEmpty ? firstEmpty.id : null);
       });
       document.getElementById('btnExportCsv').addEventListener('click', exportCurrentCsv);
+      document.getElementById('btnExportExcel').addEventListener('click', exportCurrentExcel);
+      document.getElementById('btnExportPdf').addEventListener('click', exportCurrentPdf);
 
       // Modal close & submit
       document.getElementById('btnCloseModal').addEventListener('click', closeProjectModal);
