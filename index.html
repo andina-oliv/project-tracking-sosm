@@ -119,17 +119,17 @@
   </div>
 
   <!-- Top Navigation Header -->
-  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30">
+  <header class="bg-gray-700 text-white shadow-md sticky top-0 z-30 border-b border-gray-600">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div class="flex items-center gap-3">
           <div
-            class="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0 overflow-hidden border border-slate-700/60 p-1">
+            class="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm shrink-0 overflow-hidden border border-gray-500/60 p-1">
             <img src="images.jpeg" alt="Logo PT SOSM" class="w-full h-full object-contain rounded-lg" />
           </div>
           <div>
             <h1 class="text-lg sm:text-xl font-bold tracking-tight leading-tight">PT.SOSM— Project Tracking Dashboard</h1>
-            <p class="text-xs text-slate-300 mt-0.5">
+            <p class="text-xs text-gray-200 mt-0.5">
               <span id="headerDivisionLabel">Recruitment Division</span>
             </p>
           </div>
@@ -137,13 +137,13 @@
 
         <div class="flex flex-wrap items-center gap-2">
           <!-- Division Switcher -->
-          <div class="inline-flex rounded-lg bg-slate-800 p-1 border border-slate-700" role="tablist">
+          <div class="inline-flex rounded-lg bg-gray-800/80 p-1 border border-gray-600" role="tablist">
             <button type="button" id="tabRecruitment" role="tab" aria-selected="true"
               class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors bg-blue-600 text-white shadow-sm">
               Recruitment (<span id="countRecruitmentTab">23</span>)
             </button>
             <button type="button" id="tabAdm" role="tab" aria-selected="false"
-              class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors text-slate-300 hover:text-white">
+              class="px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors text-gray-300 hover:text-white">
               ADM/Finance (<span id="countAdmTab">15</span>)
             </button>
           </div>
@@ -155,12 +155,12 @@
             <span>Add Project</span>
           </button>
           <button type="button" id="btnExportCsv"
-            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs sm:text-sm font-medium transition-colors">
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-900 border border-gray-600 text-gray-100 text-xs sm:text-sm font-medium transition-colors">
             <i data-lucide="download" class="w-4 h-4"></i>
             <span class="hidden sm:inline">Export CSV</span>
           </button>
           <button type="button" id="btnResetData" title="Reset to Initial Excel Data"
-            class="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-rose-900/60 border border-slate-700 hover:border-rose-700 text-slate-300 hover:text-rose-200 text-xs sm:text-sm font-medium transition-colors">
+            class="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gray-800 hover:bg-rose-900/60 border border-gray-600 hover:border-rose-500 text-gray-200 hover:text-rose-200 text-xs sm:text-sm font-medium transition-colors">
             <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           </button>
         </div>
@@ -476,7 +476,7 @@
         <table class="w-full text-left border-collapse min-w-[980px]">
           <thead>
             <tr
-              class="bg-slate-50 border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              class="bg-slate-100 border-b border-slate-200 text-[11px] font-semibold uppercase tracking-wider text-slate-600">
               <th class="py-3 px-3 w-12 text-center">No</th>
               <th class="py-3 px-3 min-w-[280px]">Project Name &amp; Activities</th>
               <th class="py-3 px-3 w-40">Principal</th>
@@ -1067,12 +1067,12 @@
       if (state.division === 'recruitment') {
         tabRec.className = 'px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors bg-blue-600 text-white shadow-sm';
         tabRec.setAttribute('aria-selected', 'true');
-        tabAdm.className = 'px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors text-slate-300 hover:text-white';
+        tabAdm.className = 'px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors text-gray-300 hover:text-white';
         tabAdm.setAttribute('aria-selected', 'false');
       } else {
         tabAdm.className = 'px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors bg-blue-600 text-white shadow-sm';
         tabAdm.setAttribute('aria-selected', 'true');
-        tabRec.className = 'px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors text-slate-300 hover:text-white';
+        tabRec.className = 'px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-colors text-gray-300 hover:text-white';
         tabRec.setAttribute('aria-selected', 'false');
       }
 
