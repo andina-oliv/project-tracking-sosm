@@ -495,7 +495,7 @@
               <th class="py-3 px-3 w-28 text-center">Progress</th>
               <th class="py-3 px-3 w-28 text-center">Status</th>
               <th class="py-3 px-3 min-w-[180px]">Remark / Issue</th>
-              <th class="py-3 px-3 w-16 text-center">Action</th>
+              <th class="py-3 px-3 w-20 text-center">Action</th>
             </tr>
           </thead>
           <tbody id="projectTableBody" class="divide-y divide-slate-100 text-xs sm:text-sm">
@@ -1526,12 +1526,19 @@
             </td>
             <td class="py-3 px-3 text-center align-top">${statusBadge}</td>
             <td class="py-3 px-3 align-top">${remarkHtml}</td>
-            <td class="py-3 px-3 text-center align-top">
-              <button type="button" data-open-id="${escapeHtml(p.id)}"
-                class="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                title="Details &amp; Edit">
-                <i data-lucide="edit-3" class="w-4 h-4"></i>
-              </button>
+            <td class="py-3 px-3 text-center align-top whitespace-nowrap">
+              <div class="inline-flex items-center justify-center gap-1">
+                <button type="button" data-open-id="${escapeHtml(p.id)}"
+                  class="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                  title="Details &amp; Edit">
+                  <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </button>
+                <button type="button" data-delete-id="${escapeHtml(p.id)}"
+                  class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                  title="Delete Project">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
             </td>
           </tr>
         `;
@@ -2221,6 +2228,27 @@
         const openBtn = e.target.closest('[data-open-id]');
         if (openBtn) {
           openProjectModal(openBtn.getAttribute('data-open-id'));
+          return;
+        }
+
+        const deleteBtn = e.target.closest('[data-delete-id]');
+        if (deleteBtn) {
+          const id = deleteBtn.getAttribute('data-delete-id');
+          const list = getActiveList();
+          const proj = list.find(p => p.id === id);
+          if (!proj) return;
+          const projLabel = proj.name && proj.name.trim() ? `Project #${proj.no} ("${proj.name.trim()}")` : `Project #${proj.no}`;
+          if (confirm(`Are you sure you want to delete ${projLabel}?`)) {
+            const idx = list.findIndex(p => p.id === id);
+            if (idx !== -1) {
+              list.splice(idx, 1);
+              saveState();
+              populateFilterDropdowns();
+              renderAll();
+              showToast(`Project #${proj.no} deleted`);
+            }
+          }
+          return;
         }
       });
 
