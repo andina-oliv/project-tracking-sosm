@@ -502,6 +502,73 @@
         <p class="text-xs text-slate-500 mt-1">Coba ubah kata kunci pencarian atau reset filter untuk melihat seluruh
           data.</p>
       </div>
+
+      <!-- Table Pagination Controls (Page Sebelumnya & Page Next) -->
+      <div id="tablePagination"
+        class="px-4 sm:px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs sm:text-sm">
+        <div class="flex flex-wrap items-center gap-3 text-slate-600">
+          <span id="paginationInfo" class="font-medium">Menampilkan 1–10 dari 23 proyek</span>
+          <div class="flex items-center gap-1.5 text-xs text-slate-500">
+            <span>Tampilkan:</span>
+            <select id="pageSizeSelect" aria-label="Jumlah baris per halaman"
+              class="px-2.5 py-1 text-xs border border-slate-200 rounded-lg bg-white font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+              <option value="5">5 baris</option>
+              <option value="10" selected>10 baris</option>
+              <option value="20">20 baris</option>
+              <option value="all">Semua</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 self-center sm:self-auto" id="paginationControls">
+          <!-- Tombol Page Sebelumnya -->
+          <button type="button" id="btnPrevPage"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold text-slate-700 transition-colors shadow-xs">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+            <span>Page Sebelumnya</span>
+          </button>
+
+          <!-- Nomor Halaman -->
+          <div id="paginationNumbers" class="flex items-center gap-1">
+            <!-- Dynamic page numbers -->
+          </div>
+
+          <!-- Tombol Page Next -->
+          <button type="button" id="btnNextPage"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold text-slate-700 transition-colors shadow-xs">
+            <span>Page Next</span>
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Division Navigation Bar (Navigasi Antar Halaman / Divisi) -->
+    <section aria-label="Navigasi Halaman Divisi"
+      class="bg-white rounded-xl p-4 shadow-sm border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+          <i data-lucide="layers" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Navigasi Halaman Divisi</span>
+          <p class="text-xs sm:text-sm font-bold text-slate-800" id="divisionNavStatus">
+            Halaman 1: Recruitment Division
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" id="btnPrevDivision"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm font-medium text-slate-700 transition-colors shadow-xs">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span id="prevDivisionLabel">Page Sebelumnya</span>
+        </button>
+        <button type="button" id="btnNextDivision"
+          class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm font-medium text-white transition-colors shadow-xs">
+          <span id="nextDivisionLabel">Page Next (ADM/Finance)</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
     </section>
 
   </main>
@@ -773,7 +840,11 @@
         onlyIssues: false,
         onlyNearDone: false
       },
-      sort: 'no-asc'
+      sort: 'no-asc',
+      pagination: {
+        page: 1,
+        pageSize: 10
+      }
     };
 
     let charts = {
@@ -1045,6 +1116,7 @@
       renderCharts(filteredList);
       renderAttentionPanel(allList);
       renderTable(filteredList);
+      renderDivisionNav();
 
       // Show ADM info banner if on ADM tab and all not started
       const admBanner = document.getElementById('admInfoBanner');
@@ -1339,6 +1411,7 @@
     function renderTable(list) {
       const tbody = document.getElementById('projectTableBody');
       const emptyState = document.getElementById('tableEmptyState');
+      const paginationEl = document.getElementById('tablePagination');
       const stagesMeta = STAGE_CONFIG[state.division];
 
       document.getElementById('tableTitle').textContent =
@@ -1352,11 +1425,32 @@
       if (list.length === 0) {
         tbody.innerHTML = '';
         emptyState.classList.remove('hidden');
+        if (paginationEl) paginationEl.classList.add('hidden');
         return;
       }
 
       emptyState.classList.add('hidden');
-      tbody.innerHTML = list.map((p) => {
+      if (paginationEl) paginationEl.classList.remove('hidden');
+
+      // Hitung parameter pagination
+      const totalItems = list.length;
+      const isAll = state.pagination.pageSize === 'all';
+      const pageSize = isAll ? totalItems : Number(state.pagination.pageSize);
+      const totalPages = isAll ? 1 : Math.max(1, Math.ceil(totalItems / pageSize));
+
+      if (state.pagination.page > totalPages) {
+        state.pagination.page = totalPages;
+      }
+      if (state.pagination.page < 1) {
+        state.pagination.page = 1;
+      }
+
+      const currentPage = state.pagination.page;
+      const startIndex = isAll ? 0 : (currentPage - 1) * pageSize;
+      const endIndex = isAll ? totalItems : Math.min(startIndex + pageSize, totalItems);
+      const paginatedList = list.slice(startIndex, endIndex);
+
+      tbody.innerHTML = paginatedList.map((p) => {
         const m = calcProjectMetrics(p);
 
         const statusBadge =
@@ -1436,6 +1530,114 @@
           </tr>
         `;
       }).join('');
+
+      renderPaginationControls(totalItems, startIndex, endIndex, currentPage, totalPages, isAll);
+    }
+
+    function renderPaginationControls(totalItems, startIndex, endIndex, currentPage, totalPages, isAll) {
+      const infoEl = document.getElementById('paginationInfo');
+      const prevBtn = document.getElementById('btnPrevPage');
+      const nextBtn = document.getElementById('btnNextPage');
+      const numbersEl = document.getElementById('paginationNumbers');
+      const pageSizeSelect = document.getElementById('pageSizeSelect');
+
+      if (pageSizeSelect) {
+        pageSizeSelect.value = String(state.pagination.pageSize);
+      }
+
+      if (infoEl) {
+        if (totalItems === 0) {
+          infoEl.textContent = 'Tidak ada proyek';
+        } else if (isAll) {
+          infoEl.innerHTML = `Menampilkan seluruh <strong>${totalItems}</strong> proyek`;
+        } else {
+          infoEl.innerHTML = `Menampilkan <strong>${startIndex + 1}</strong>–<strong>${endIndex}</strong> dari <strong>${totalItems}</strong> proyek <span class="text-slate-400 font-normal ml-1">(Halaman ${currentPage} dari ${totalPages})</span>`;
+        }
+      }
+
+      if (prevBtn) {
+        prevBtn.disabled = currentPage <= 1;
+      }
+      if (nextBtn) {
+        nextBtn.disabled = currentPage >= totalPages;
+      }
+
+      if (numbersEl) {
+        if (totalPages <= 1) {
+          numbersEl.innerHTML = '';
+        } else {
+          let pageBtnsHtml = '';
+          const maxButtons = 5;
+          let startPage = Math.max(1, currentPage - 2);
+          let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+          if (endPage - startPage + 1 < maxButtons) {
+            startPage = Math.max(1, endPage - maxButtons + 1);
+          }
+
+          if (startPage > 1) {
+            pageBtnsHtml += `
+              <button type="button" data-page="1"
+                class="w-8 h-8 rounded-lg border text-xs font-semibold ${currentPage === 1 ? 'bg-blue-600 text-white border-blue-600 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'}">
+                1
+              </button>
+            `;
+            if (startPage > 2) {
+              pageBtnsHtml += `<span class="px-1 text-slate-400 text-xs">...</span>`;
+            }
+          }
+
+          for (let p = startPage; p <= endPage; p++) {
+            const isActive = p === currentPage;
+            pageBtnsHtml += `
+              <button type="button" data-page="${p}"
+                class="w-8 h-8 rounded-lg border text-xs font-semibold transition-colors ${isActive ? 'bg-blue-600 text-white border-blue-600 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'}">
+                ${p}
+              </button>
+            `;
+          }
+
+          if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+              pageBtnsHtml += `<span class="px-1 text-slate-400 text-xs">...</span>`;
+            }
+            pageBtnsHtml += `
+              <button type="button" data-page="${totalPages}"
+                class="w-8 h-8 rounded-lg border text-xs font-semibold ${currentPage === totalPages ? 'bg-blue-600 text-white border-blue-600 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'}">
+                ${totalPages}
+              </button>
+            `;
+          }
+
+          numbersEl.innerHTML = pageBtnsHtml;
+        }
+      }
+    }
+
+    function renderDivisionNav() {
+      const statusEl = document.getElementById('divisionNavStatus');
+      const prevBtn = document.getElementById('btnPrevDivision');
+      const nextBtn = document.getElementById('btnNextDivision');
+      const prevLabel = document.getElementById('prevDivisionLabel');
+      const nextLabel = document.getElementById('nextDivisionLabel');
+
+      if (!statusEl || !prevBtn || !nextBtn) return;
+
+      const recCount = state.data.recruitment.length;
+      const admCount = state.data.adm.length;
+
+      if (state.division === 'recruitment') {
+        statusEl.innerHTML = `Halaman 1: <strong>Recruitment Division</strong> (${recCount} Proyek)`;
+        prevBtn.disabled = true;
+        prevLabel.textContent = 'Page Sebelumnya';
+        nextBtn.disabled = false;
+        nextLabel.textContent = `Page Next (ADM/Finance - ${admCount} Proyek)`;
+      } else {
+        statusEl.innerHTML = `Halaman 2: <strong>ADM/Finance Division</strong> (${admCount} Proyek)`;
+        prevBtn.disabled = false;
+        prevLabel.textContent = `Page Sebelumnya (Recruitment - ${recCount} Proyek)`;
+        nextBtn.disabled = true;
+        nextLabel.textContent = 'Page Next';
+      }
     }
 
     // =========================================================
@@ -1550,44 +1752,52 @@
       // Filters
       document.getElementById('searchInput').addEventListener('input', (e) => {
         state.filters.search = e.target.value;
+        state.pagination.page = 1;
         renderAll();
       });
 
       document.getElementById('filterPrincipal').addEventListener('change', (e) => {
         state.filters.principal = e.target.value;
+        state.pagination.page = 1;
         renderAll();
       });
 
       document.getElementById('filterPic').addEventListener('change', (e) => {
         state.filters.pic = e.target.value;
+        state.pagination.page = 1;
         renderAll();
       });
 
       document.getElementById('filterStatus').addEventListener('change', (e) => {
         state.filters.status = e.target.value;
+        state.pagination.page = 1;
         renderAll();
       });
 
       document.getElementById('sortSelect').addEventListener('change', (e) => {
         state.sort = e.target.value;
+        state.pagination.page = 1;
         renderAll();
       });
 
       // Date, Month, Year filters
       document.getElementById('filterDay').addEventListener('change', (e) => {
         state.filters.day = e.target.value;
+        state.pagination.page = 1;
         syncDateInputsFromDropdowns();
         renderAll();
       });
 
       document.getElementById('filterMonth').addEventListener('change', (e) => {
         state.filters.month = e.target.value;
+        state.pagination.page = 1;
         syncDateInputsFromDropdowns();
         renderAll();
       });
 
       document.getElementById('filterYear').addEventListener('change', (e) => {
         state.filters.year = e.target.value;
+        state.pagination.page = 1;
         syncDateInputsFromDropdowns();
         renderAll();
       });
@@ -1595,6 +1805,7 @@
       document.getElementById('filterExactDate').addEventListener('change', (e) => {
         const val = e.target.value;
         state.filters.exactDate = val;
+        state.pagination.page = 1;
         if (val) {
           const parts = parseDateParts(val);
           state.filters.year = parts.year;
@@ -1615,6 +1826,7 @@
         state.filters.year = '';
         state.filters.month = '';
         state.filters.day = '';
+        state.pagination.page = 1;
         document.getElementById('filterExactDate').value = '';
         document.getElementById('filterYear').value = '';
         document.getElementById('filterMonth').value = '';
@@ -1628,6 +1840,7 @@
         state.filters.year = '';
         state.filters.month = '';
         state.filters.day = '';
+        state.pagination.page = 1;
         document.getElementById('filterExactDate').value = '';
         document.getElementById('filterYear').value = '';
         document.getElementById('filterMonth').value = '';
@@ -1639,16 +1852,19 @@
       // Quick chips
       document.getElementById('chipUrgent').addEventListener('click', () => {
         state.filters.onlyUrgent = !state.filters.onlyUrgent;
+        state.pagination.page = 1;
         renderAll();
       });
 
       document.getElementById('chipIssues').addEventListener('click', () => {
         state.filters.onlyIssues = !state.filters.onlyIssues;
+        state.pagination.page = 1;
         renderAll();
       });
 
       document.getElementById('chipNearDone').addEventListener('click', () => {
         state.filters.onlyNearDone = !state.filters.onlyNearDone;
+        state.pagination.page = 1;
         renderAll();
       });
 
@@ -1660,6 +1876,7 @@
       // KPI quick filters
       document.getElementById('kpiCardCompleted').addEventListener('click', () => {
         state.filters.status = state.filters.status === 'Completed' ? '' : 'Completed';
+        state.pagination.page = 1;
         document.getElementById('filterStatus').value = state.filters.status;
         renderAll();
       });
@@ -1668,13 +1885,93 @@
         const target = state.division === 'adm' && getActiveList().every(p => calcProjectMetrics(p).status === 'Not Started')
           ? 'Not Started' : 'In Progress';
         state.filters.status = state.filters.status === target ? '' : target;
+        state.pagination.page = 1;
         document.getElementById('filterStatus').value = state.filters.status;
         renderAll();
       });
 
       document.getElementById('kpiCardIssues').addEventListener('click', () => {
         state.filters.onlyIssues = !state.filters.onlyIssues;
+        state.pagination.page = 1;
         renderAll();
+      });
+
+      // Table Pagination Events (Page Sebelumnya & Page Next)
+      document.getElementById('btnPrevPage').addEventListener('click', () => {
+        if (state.pagination.page > 1) {
+          state.pagination.page--;
+          renderTable(getFilteredList());
+          if (window.lucide) window.lucide.createIcons();
+          const tableSection = document.getElementById('projectTableBody');
+          if (tableSection) {
+            tableSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
+      });
+
+      document.getElementById('btnNextPage').addEventListener('click', () => {
+        const list = getFilteredList();
+        const isAll = state.pagination.pageSize === 'all';
+        const pageSize = isAll ? list.length : Number(state.pagination.pageSize);
+        const totalPages = isAll ? 1 : Math.max(1, Math.ceil(list.length / pageSize));
+        if (state.pagination.page < totalPages) {
+          state.pagination.page++;
+          renderTable(list);
+          if (window.lucide) window.lucide.createIcons();
+          const tableSection = document.getElementById('projectTableBody');
+          if (tableSection) {
+            tableSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }
+      });
+
+      document.getElementById('paginationNumbers').addEventListener('click', (e) => {
+        const pageBtn = e.target.closest('[data-page]');
+        if (pageBtn) {
+          const targetPage = Number(pageBtn.getAttribute('data-page'));
+          if (targetPage && targetPage !== state.pagination.page) {
+            state.pagination.page = targetPage;
+            renderTable(getFilteredList());
+            if (window.lucide) window.lucide.createIcons();
+            const tableSection = document.getElementById('projectTableBody');
+            if (tableSection) {
+              tableSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }
+        }
+      });
+
+      document.getElementById('pageSizeSelect').addEventListener('change', (e) => {
+        const val = e.target.value;
+        state.pagination.pageSize = val === 'all' ? 'all' : Number(val);
+        state.pagination.page = 1;
+        renderTable(getFilteredList());
+        if (window.lucide) window.lucide.createIcons();
+      });
+
+      // Division Nav Events (Page Sebelumnya & Page Next Divisi)
+      document.getElementById('btnPrevDivision').addEventListener('click', () => {
+        if (state.division !== 'recruitment') {
+          state.division = 'recruitment';
+          state.pagination.page = 1;
+          resetFiltersOnly();
+          populateFilterDropdowns();
+          renderAll();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          showToast('Beralih ke Halaman Recruitment Division');
+        }
+      });
+
+      document.getElementById('btnNextDivision').addEventListener('click', () => {
+        if (state.division !== 'adm') {
+          state.division = 'adm';
+          state.pagination.page = 1;
+          resetFiltersOnly();
+          populateFilterDropdowns();
+          renderAll();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          showToast('Beralih ke Halaman ADM/Finance Division');
+        }
       });
 
       // Delegated clicks on table (stage toggle & edit button)
@@ -1824,6 +2121,7 @@
         onlyIssues: false,
         onlyNearDone: false
       };
+      state.pagination.page = 1;
       document.getElementById('searchInput').value = '';
       document.getElementById('filterPrincipal').value = '';
       document.getElementById('filterPic').value = '';
