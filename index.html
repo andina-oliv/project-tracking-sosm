@@ -503,7 +503,7 @@
           data.</p>
       </div>
 
-      <!-- Table Pagination Controls (Page Sebelumnya & Page Next) -->
+      <!-- Table Pagination Controls (Previous Page & Next Page) -->
       <div id="tablePagination"
         class="px-4 sm:px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs sm:text-sm">
         <div class="flex flex-wrap items-center gap-3 text-slate-600">
@@ -521,11 +521,11 @@
         </div>
 
         <div class="flex items-center gap-1.5 self-center sm:self-auto" id="paginationControls">
-          <!-- Tombol Page Sebelumnya -->
+          <!-- Tombol Previous Page -->
           <button type="button" id="btnPrevPage"
             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold text-slate-700 transition-colors shadow-xs">
             <i data-lucide="chevron-left" class="w-4 h-4"></i>
-            <span>Page Sebelumnya</span>
+            <span>Previous Page</span>
           </button>
 
           <!-- Nomor Halaman -->
@@ -533,10 +533,10 @@
             <!-- Dynamic page numbers -->
           </div>
 
-          <!-- Tombol Page Next -->
+          <!-- Tombol Next Page -->
           <button type="button" id="btnNextPage"
             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm font-semibold text-slate-700 transition-colors shadow-xs">
-            <span>Page Next</span>
+            <span>Next Page</span>
             <i data-lucide="chevron-right" class="w-4 h-4"></i>
           </button>
         </div>
@@ -561,11 +561,11 @@
         <button type="button" id="btnPrevDivision"
           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm font-medium text-slate-700 transition-colors shadow-xs">
           <i data-lucide="arrow-left" class="w-4 h-4"></i>
-          <span id="prevDivisionLabel">Page Sebelumnya</span>
+          <span id="prevDivisionLabel">Previous Page</span>
         </button>
         <button type="button" id="btnNextDivision"
           class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm font-medium text-white transition-colors shadow-xs">
-          <span id="nextDivisionLabel">Page Next (ADM/Finance)</span>
+          <span id="nextDivisionLabel">Next Page (ADM/Finance)</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
       </div>
@@ -1628,15 +1628,15 @@
       if (state.division === 'recruitment') {
         statusEl.innerHTML = `Halaman 1: <strong>Recruitment Division</strong> (${recCount} Proyek)`;
         prevBtn.disabled = true;
-        prevLabel.textContent = 'Page Sebelumnya';
+        prevLabel.textContent = 'Previous Page';
         nextBtn.disabled = false;
-        nextLabel.textContent = `Page Next (ADM/Finance - ${admCount} Proyek)`;
+        nextLabel.textContent = `Next Page (ADM/Finance - ${admCount} Proyek)`;
       } else {
         statusEl.innerHTML = `Halaman 2: <strong>ADM/Finance Division</strong> (${admCount} Proyek)`;
         prevBtn.disabled = false;
-        prevLabel.textContent = `Page Sebelumnya (Recruitment - ${recCount} Proyek)`;
+        prevLabel.textContent = `Previous Page (Recruitment - ${recCount} Proyek)`;
         nextBtn.disabled = true;
-        nextLabel.textContent = 'Page Next';
+        nextLabel.textContent = 'Next Page';
       }
     }
 
@@ -1896,7 +1896,7 @@
         renderAll();
       });
 
-      // Table Pagination Events (Page Sebelumnya & Page Next)
+      // Table Pagination Events (Previous Page & Next Page)
       document.getElementById('btnPrevPage').addEventListener('click', () => {
         if (state.pagination.page > 1) {
           state.pagination.page--;
@@ -1949,7 +1949,7 @@
         if (window.lucide) window.lucide.createIcons();
       });
 
-      // Division Nav Events (Page Sebelumnya & Page Next Divisi)
+      // Division Nav Events (Previous Page & Next Page Divisi)
       document.getElementById('btnPrevDivision').addEventListener('click', () => {
         if (state.division !== 'recruitment') {
           state.division = 'recruitment';
