@@ -13,6 +13,9 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <!-- Firebase SDK for Realtime Multi-User Cloud Sync (Optional) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <style>
     body {
       font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -168,6 +171,18 @@
             class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-rose-600 border border-gray-600 text-gray-100 text-xs sm:text-sm font-medium transition-colors">
             <i data-lucide="file-text" class="w-4 h-4"></i>
             <span class="hidden sm:inline">Export PDF</span>
+          </button>
+          <!-- Team Cloud Sync Indicator & Settings Button -->
+          <button type="button" id="btnCloudSync"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white text-xs sm:text-sm font-medium transition-colors"
+            title="Team Cloud Sync Settings (Google Sheets / Firebase)">
+            <span id="cloudSyncDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span id="cloudSyncLabel" class="hidden sm:inline">Team Cloud</span>
+            <i data-lucide="cloud" class="w-4 h-4 text-slate-300"></i>
+          </button>
+          <button type="button" id="btnManualSync" title="Sync now with Team Cloud"
+            class="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-200 text-xs sm:text-sm font-medium transition-colors">
+            <i data-lucide="refresh-cw" id="iconManualSync" class="w-4 h-4"></i>
           </button>
           <button type="button" id="btnResetData" title="Reset to Initial Excel Data"
             class="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg bg-gray-800 hover:bg-rose-900/60 border border-gray-600 hover:border-rose-500 text-gray-200 hover:text-rose-200 text-xs sm:text-sm font-medium transition-colors">
@@ -701,6 +716,149 @@
     </div>
   </div>
 
+  <!-- Team Cloud Sync Settings Modal -->
+  <div id="cloudSyncModal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full max-h-[92vh] flex flex-col overflow-hidden fade-in">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+            <i data-lucide="cloud" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Team Cloud Sync (Multi-User)</h3>
+            <p class="text-xs text-slate-500">Sync dashboard data live across all PT SOSM team computers</p>
+          </div>
+        </div>
+        <button type="button" id="btnCloseCloudSync" aria-label="Close Modal"
+          class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto custom-scrollbar space-y-4">
+        <!-- Status Banner -->
+        <div id="cloudStatusBanner" class="p-3.5 rounded-xl border border-amber-200 bg-amber-50/70 flex items-start gap-3">
+          <i data-lucide="info" class="w-5 h-5 text-amber-600 shrink-0 mt-0.5"></i>
+          <div class="text-xs text-amber-900 leading-relaxed">
+            <strong id="cloudStatusBannerTitle" class="font-bold">Status: Local Browser Storage Only</strong>
+            <p id="cloudStatusBannerDesc" class="mt-0.5 text-amber-800">
+              Updates are currently stored on this computer only. Connect your team's Google Sheets (or Firebase) below so everyone in PT SOSM can view and update the dashboard together!
+            </p>
+          </div>
+        </div>
+
+        <!-- Provider Selection Tabs -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5">Select Shared Cloud Database:</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="tabProviderSheets"
+              class="p-3 rounded-xl border-2 text-left transition-all border-blue-600 bg-blue-50/60 text-blue-900">
+              <div class="flex items-center gap-2 mb-1">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600"></i>
+                <span class="text-xs font-bold">Google Sheets</span>
+                <span class="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-700 rounded">Recommended</span>
+              </div>
+              <p class="text-[11px] text-slate-600">Free, no extra account needed. Stored in Google Drive with full revision history.</p>
+            </button>
+            <button type="button" id="tabProviderFirebase"
+              class="p-3 rounded-xl border-2 text-left transition-all border-slate-200 bg-white hover:border-slate-300 text-slate-800">
+              <div class="flex items-center gap-2 mb-1">
+                <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i>
+                <span class="text-xs font-bold">Firebase Realtime</span>
+              </div>
+              <p class="text-[11px] text-slate-500">Sub-second live sync without refreshing. Uses free Google Firebase Firestore.</p>
+            </button>
+          </div>
+        </div>
+
+        <!-- Google Sheets Configuration Panel -->
+        <div id="panelGoogleSheets" class="space-y-3">
+          <div>
+            <label for="cfgGoogleSheetsUrl" class="block text-xs font-semibold text-slate-700 mb-1">
+              Google Apps Script Web App URL *
+            </label>
+            <input type="url" id="cfgGoogleSheetsUrl"
+              placeholder="https://script.google.com/macros/s/.../exec"
+              class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 font-mono" />
+            <p class="text-[11px] text-slate-500 mt-1">
+              Obtained after deploying the script in your shared Google Sheet (file <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600">google-apps-script.js</code>).
+            </p>
+          </div>
+
+          <!-- Instructions Box -->
+          <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-2 text-xs text-slate-700">
+            <div class="flex items-center justify-between">
+              <span class="font-bold flex items-center gap-1.5 text-slate-800">
+                <i data-lucide="list-ordered" class="w-4 h-4 text-blue-600"></i>
+                Quick 2-Minute Setup Guide:
+              </span>
+              <button type="button" id="btnCopyScriptCode"
+                class="inline-flex items-center gap-1 px-2 py-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-[11px] font-semibold text-slate-700 shadow-2xs transition-colors">
+                <i data-lucide="copy" class="w-3 h-3"></i>
+                <span>Copy Script Code</span>
+              </button>
+            </div>
+            <ol class="list-decimal list-inside space-y-1 text-[11.5px] text-slate-600 leading-normal pl-1">
+              <li>Open your Google Sheet or Google Drive.</li>
+              <li>Click <strong>Extensions &gt; Apps Script</strong>.</li>
+              <li>Paste the code from <code class="bg-slate-200 px-1 py-0.5 rounded text-[10.5px]">google-apps-script.js</code> (or click Copy button above).</li>
+              <li>Click <strong>Deploy &gt; New deployment &gt; Web app</strong>.</li>
+              <li>Set <em>Execute as:</em> <strong>Me</strong> and <em>Who has access:</em> <strong>Anyone</strong>.</li>
+              <li>Click <strong>Deploy</strong>, copy the Web App URL, and paste it into the field above!</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Firebase Configuration Panel -->
+        <div id="panelFirebase" class="space-y-3 hidden">
+          <div>
+            <label for="cfgFirebaseConfig" class="block text-xs font-semibold text-slate-700 mb-1">
+              Firebase Project Configuration (JSON object)
+            </label>
+            <textarea id="cfgFirebaseConfig" rows="4"
+              placeholder='{"apiKey": "...", "authDomain": "...", "projectId": "...", ...}'
+              class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 font-mono"></textarea>
+            <p class="text-[11px] text-slate-500 mt-1">
+              Found in your Firebase Console (Project Settings &gt; General &gt; Your apps &gt; SDK setup and configuration).
+            </p>
+          </div>
+        </div>
+
+        <!-- General Options -->
+        <div class="pt-2 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="cfgAutoSync" checked
+              class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+            <span class="text-xs font-medium text-slate-700">Auto-sync with cloud (every 15s)</span>
+          </label>
+          <span id="cfgLastSyncDisplay" class="text-[11px] text-slate-400">Not synced yet</span>
+        </div>
+
+        <!-- Test Log Message Box -->
+        <div id="cloudTestLog" class="hidden p-2.5 rounded-lg text-xs font-medium"></div>
+      </div>
+
+      <div class="px-5 py-3 border-t border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+        <button type="button" id="btnDisconnectCloud"
+          class="px-3 py-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-medium transition-colors">
+          Disconnect (Use Local)
+        </button>
+        <div class="flex items-center gap-2 ml-auto">
+          <button type="button" id="btnTestCloudConnection"
+            class="px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-xs font-medium text-slate-700 shadow-2xs transition-colors inline-flex items-center gap-1.5">
+            <i data-lucide="play" class="w-3.5 h-3.5 text-blue-600"></i>
+            <span>Test Connection</span>
+          </button>
+          <button type="button" id="btnSaveCloudSync"
+            class="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-xs font-medium text-white shadow-xs transition-colors">
+            Save &amp; Connect
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification -->
   <div id="toast"
     class="fixed bottom-5 right-5 z-50 hidden items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-lg text-xs sm:text-sm font-medium fade-in">
@@ -859,6 +1017,454 @@
       pic: null
     };
 
+    // =========================================================
+    // CLOUD SYNC & TEAM COLLABORATION MANAGER
+    // =========================================================
+    const CLOUD_CONFIG_KEY = 'pt_sosm_cloud_sync_config_v1';
+    let cloudConfig = {
+      provider: 'none', // 'none' | 'googlesheets' | 'firebase'
+      googleSheetsUrl: '',
+      firebaseConfig: '',
+      autoSync: true,
+      lastSyncTime: null
+    };
+
+    let cloudSyncTimer = null;
+    let cloudPushTimeout = null;
+    let firebaseAppInstance = null;
+    let firebaseFirestoreDb = null;
+    let firebaseUnsubscribeSnapshot = null;
+
+    // Google Apps Script template for 1-click copy inside the modal
+    const GOOGLE_APPS_SCRIPT_TEMPLATE = `function doGet(e) {
+  var action = (e && e.parameter && e.parameter.action) || 'read';
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('DashboardData') || ss.insertSheet('DashboardData');
+  
+  if (action === 'write' && e.parameter.data) {
+    sheet.getRange(1, 1).setValue(e.parameter.data);
+    sheet.getRange(1, 2).setValue(new Date().toISOString());
+    return ContentService.createTextOutput(JSON.stringify({ status: 'success', timestamp: new Date().toISOString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  var cellVal = sheet.getRange(1, 1).getValue();
+  var updatedAt = sheet.getRange(1, 2).getValue() || null;
+  var data = cellVal ? JSON.parse(cellVal) : null;
+  return ContentService.createTextOutput(JSON.stringify({ status: 'success', data: data, updatedAt: updatedAt }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('DashboardData') || ss.insertSheet('DashboardData');
+    var postData = (e && e.postData && e.postData.contents) || (e && e.parameter && e.parameter.data);
+    if (!postData) throw new Error('No data received');
+    sheet.getRange(1, 1).setValue(postData);
+    sheet.getRange(1, 2).setValue(new Date().toISOString());
+    return ContentService.createTextOutput(JSON.stringify({ status: 'success', timestamp: new Date().toISOString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+    function loadCloudConfig() {
+      try {
+        const raw = localStorage.getItem(CLOUD_CONFIG_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            cloudConfig = Object.assign(cloudConfig, parsed);
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load cloud sync config:', e);
+      }
+    }
+
+    function saveCloudConfig() {
+      try {
+        localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cloudConfig));
+      } catch (e) {
+        console.warn('Failed to save cloud sync config:', e);
+      }
+      updateCloudSyncUI();
+    }
+
+    function initCloudSync() {
+      loadCloudConfig();
+      updateCloudSyncUI();
+
+      if (cloudConfig.provider === 'firebase' && cloudConfig.firebaseConfig) {
+        setupFirebaseRealtime();
+      } else if (cloudConfig.provider === 'googlesheets' && cloudConfig.googleSheetsUrl) {
+        fetchFromCloud(true);
+      }
+
+      startAutoSync();
+    }
+
+    function updateCloudSyncUI() {
+      const dot = document.getElementById('cloudSyncDot');
+      const label = document.getElementById('cloudSyncLabel');
+      const btn = document.getElementById('btnCloudSync');
+      const banner = document.getElementById('cloudStatusBanner');
+      const bannerTitle = document.getElementById('cloudStatusBannerTitle');
+      const bannerDesc = document.getElementById('cloudStatusBannerDesc');
+      const lastSyncDisplay = document.getElementById('cfgLastSyncDisplay');
+
+      const timeText = cloudConfig.lastSyncTime
+        ? new Date(cloudConfig.lastSyncTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        : null;
+
+      if (lastSyncDisplay) {
+        lastSyncDisplay.textContent = timeText ? `Last synced: ${timeText}` : 'Not synced yet';
+      }
+
+      if (cloudConfig.provider === 'googlesheets') {
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        if (label) label.textContent = 'Sheets Cloud';
+        if (btn) btn.title = `Connected to Google Sheets (${timeText ? 'Synced at ' + timeText : 'Connected'}) • Click to manage`;
+        if (banner) {
+          banner.className = 'p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/70 flex items-start gap-3';
+          if (bannerTitle) bannerTitle.textContent = 'Connected: Google Sheets Cloud Database';
+          if (bannerDesc) bannerDesc.textContent = `All updates are automatically saved to your shared Google Spreadsheet. Any team member with this dashboard will see real-time changes! ${timeText ? '(Last synced: ' + timeText + ')' : ''}`;
+        }
+      } else if (cloudConfig.provider === 'firebase') {
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+        if (label) label.textContent = 'Live Cloud';
+        if (btn) btn.title = `Connected to Firebase Realtime (${timeText ? 'Synced at ' + timeText : 'Active'}) • Click to manage`;
+        if (banner) {
+          banner.className = 'p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/70 flex items-start gap-3';
+          if (bannerTitle) bannerTitle.textContent = 'Connected: Firebase Realtime Database';
+          if (bannerDesc) bannerDesc.textContent = 'Instant sub-second collaboration enabled! Screen updates live whenever any team member makes a change.';
+        }
+      } else {
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+        if (label) label.textContent = 'Connect Cloud';
+        if (btn) btn.title = 'Local Mode: Click to connect Google Sheets or Firebase for multi-user collaboration';
+        if (banner) {
+          banner.className = 'p-3.5 rounded-xl border border-amber-200 bg-amber-50/70 flex items-start gap-3';
+          if (bannerTitle) bannerTitle.textContent = 'Status: Local Browser Storage Only';
+          if (bannerDesc) bannerDesc.textContent = 'Updates are currently stored on this computer only. Connect your team\'s Google Sheets (or Firebase) below so everyone in PT SOSM can view and update the dashboard together!';
+        }
+      }
+    }
+
+    function updateCloudSyncIndicator(stateType) {
+      const dot = document.getElementById('cloudSyncDot');
+      if (!dot) return;
+      if (stateType === 'syncing') {
+        dot.className = 'w-2 h-2 rounded-full bg-blue-400 animate-ping';
+      } else if (stateType === 'synced') {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+      } else if (stateType === 'error') {
+        dot.className = 'w-2 h-2 rounded-full bg-rose-400';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+      }
+    }
+
+    function scheduleCloudPush() {
+      if (cloudConfig.provider === 'none') return;
+      if (cloudPushTimeout) clearTimeout(cloudPushTimeout);
+      updateCloudSyncIndicator('syncing');
+      cloudPushTimeout = setTimeout(() => {
+        pushToCloud(state.data);
+      }, 700);
+    }
+
+    async function pushToCloud(data) {
+      if (cloudConfig.provider === 'googlesheets' && cloudConfig.googleSheetsUrl) {
+        try {
+          updateCloudSyncIndicator('syncing');
+          await fetch(cloudConfig.googleSheetsUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(data)
+          });
+          cloudConfig.lastSyncTime = new Date().toISOString();
+          saveCloudConfig();
+          updateCloudSyncIndicator('synced');
+        } catch (err) {
+          console.warn('Google Sheets cloud push error:', err);
+          updateCloudSyncIndicator('error');
+        }
+      } else if (cloudConfig.provider === 'firebase' && firebaseFirestoreDb) {
+        try {
+          updateCloudSyncIndicator('syncing');
+          await firebaseFirestoreDb.collection('sosm_tracking').doc('current').set({
+            recruitment: data.recruitment,
+            adm: data.adm,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          cloudConfig.lastSyncTime = new Date().toISOString();
+          saveCloudConfig();
+          updateCloudSyncIndicator('synced');
+        } catch (err) {
+          console.warn('Firebase cloud push error:', err);
+          updateCloudSyncIndicator('error');
+        }
+      }
+    }
+
+    async function fetchFromCloud(silent = false) {
+      const manualIcon = document.getElementById('iconManualSync');
+      if (manualIcon) manualIcon.classList.add('animate-spin');
+
+      if (cloudConfig.provider === 'googlesheets' && cloudConfig.googleSheetsUrl) {
+        try {
+          updateCloudSyncIndicator('syncing');
+          const url = cloudConfig.googleSheetsUrl + (cloudConfig.googleSheetsUrl.includes('?') ? '&' : '?') + 'action=read&t=' + Date.now();
+          const resp = await fetch(url);
+          const res = await resp.json();
+          if (res && res.status === 'success' && res.data && Array.isArray(res.data.recruitment) && Array.isArray(res.data.adm)) {
+            const currentStr = JSON.stringify(state.data);
+            const incomingStr = JSON.stringify(res.data);
+            if (currentStr !== incomingStr) {
+              state.data = res.data;
+              localStorage.setItem(STORAGE_KEY, incomingStr);
+              populateFilterDropdowns();
+              renderAll();
+              if (!silent) showToast('Dashboard updated with latest team changes!');
+            } else {
+              if (!silent) showToast('Already up to date with Team Cloud');
+            }
+            cloudConfig.lastSyncTime = new Date().toISOString();
+            saveCloudConfig();
+            updateCloudSyncIndicator('synced');
+            return true;
+          } else {
+            // Initialize cloud if empty
+            await pushToCloud(state.data);
+            if (!silent) showToast('Initialized Google Sheets with current dashboard data');
+            updateCloudSyncIndicator('synced');
+            return true;
+          }
+        } catch (err) {
+          console.warn('Google Sheets fetch error:', err);
+          updateCloudSyncIndicator('error');
+          if (!silent) showToast('Failed to connect to Google Sheets Web App');
+          return false;
+        } finally {
+          if (manualIcon) manualIcon.classList.remove('animate-spin');
+        }
+      } else if (cloudConfig.provider === 'firebase') {
+        if (!silent) showToast('Firebase Realtime Sync is active');
+        if (manualIcon) manualIcon.classList.remove('animate-spin');
+        return true;
+      } else {
+        if (!silent) {
+          showToast('Team Cloud not connected yet. Click "Connect Cloud" to set up.');
+          openCloudSyncModal();
+        }
+        if (manualIcon) manualIcon.classList.remove('animate-spin');
+        return false;
+      }
+    }
+
+    function setupFirebaseRealtime() {
+      try {
+        if (!window.firebase) {
+          console.warn('Firebase SDK not loaded');
+          return;
+        }
+        let cfg = null;
+        try {
+          cfg = typeof cloudConfig.firebaseConfig === 'string' ? JSON.parse(cloudConfig.firebaseConfig) : cloudConfig.firebaseConfig;
+        } catch (e) {
+          console.warn('Invalid Firebase config JSON');
+          return;
+        }
+        if (!cfg || !cfg.projectId) return;
+
+        if (!firebaseAppInstance) {
+          firebaseAppInstance = firebase.initializeApp(cfg, 'sosm_app_' + Date.now());
+        }
+        firebaseFirestoreDb = firebaseAppInstance.firestore();
+
+        if (firebaseUnsubscribeSnapshot) firebaseUnsubscribeSnapshot();
+
+        firebaseUnsubscribeSnapshot = firebaseFirestoreDb.collection('sosm_tracking').doc('current').onSnapshot((docSnap) => {
+          if (docSnap.exists) {
+            const data = docSnap.data();
+            if (data && Array.isArray(data.recruitment) && Array.isArray(data.adm)) {
+              const currentStr = JSON.stringify(state.data);
+              const incoming = { recruitment: data.recruitment, adm: data.adm };
+              const incomingStr = JSON.stringify(incoming);
+              if (currentStr !== incomingStr) {
+                state.data = incoming;
+                localStorage.setItem(STORAGE_KEY, incomingStr);
+                populateFilterDropdowns();
+                renderAll();
+                showToast('Live update received from team!');
+              }
+              cloudConfig.lastSyncTime = new Date().toISOString();
+              saveCloudConfig();
+              updateCloudSyncIndicator('synced');
+            }
+          } else {
+            pushToCloud(state.data);
+          }
+        }, (err) => {
+          console.warn('Firebase snapshot error:', err);
+          updateCloudSyncIndicator('error');
+        });
+      } catch (err) {
+        console.warn('Firebase setup error:', err);
+      }
+    }
+
+    function startAutoSync() {
+      if (cloudSyncTimer) clearInterval(cloudSyncTimer);
+      if (cloudConfig.provider === 'googlesheets' && cloudConfig.autoSync) {
+        cloudSyncTimer = setInterval(() => {
+          const modal = document.getElementById('projectModal');
+          if (modal && !modal.classList.contains('hidden')) return;
+          fetchFromCloud(true);
+        }, 15000);
+      }
+    }
+
+    function openCloudSyncModal() {
+      const modal = document.getElementById('cloudSyncModal');
+      if (!modal) return;
+      document.getElementById('cfgGoogleSheetsUrl').value = cloudConfig.googleSheetsUrl || '';
+      document.getElementById('cfgFirebaseConfig').value = cloudConfig.firebaseConfig || '';
+      document.getElementById('cfgAutoSync').checked = Boolean(cloudConfig.autoSync);
+      const testLog = document.getElementById('cloudTestLog');
+      if (testLog) testLog.classList.add('hidden');
+
+      switchCloudProviderTab(cloudConfig.provider === 'firebase' ? 'firebase' : 'googlesheets');
+      updateCloudSyncUI();
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeCloudSyncModal() {
+      const modal = document.getElementById('cloudSyncModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    let activeCloudTab = 'googlesheets';
+    function switchCloudProviderTab(provider) {
+      activeCloudTab = provider;
+      const tabSheets = document.getElementById('tabProviderSheets');
+      const tabFirebase = document.getElementById('tabProviderFirebase');
+      const panelSheets = document.getElementById('panelGoogleSheets');
+      const panelFirebase = document.getElementById('panelFirebase');
+
+      if (provider === 'googlesheets') {
+        tabSheets.className = 'p-3 rounded-xl border-2 text-left transition-all border-blue-600 bg-blue-50/60 text-blue-900';
+        tabFirebase.className = 'p-3 rounded-xl border-2 text-left transition-all border-slate-200 bg-white hover:border-slate-300 text-slate-800';
+        panelSheets.classList.remove('hidden');
+        panelFirebase.classList.add('hidden');
+      } else {
+        tabFirebase.className = 'p-3 rounded-xl border-2 text-left transition-all border-blue-600 bg-blue-50/60 text-blue-900';
+        tabSheets.className = 'p-3 rounded-xl border-2 text-left transition-all border-slate-200 bg-white hover:border-slate-300 text-slate-800';
+        panelFirebase.classList.remove('hidden');
+        panelSheets.classList.add('hidden');
+      }
+    }
+
+    function handleCopyScriptCode() {
+      navigator.clipboard.writeText(GOOGLE_APPS_SCRIPT_TEMPLATE).then(() => {
+        showToast('Google Apps Script code copied to clipboard!');
+      }).catch(() => {
+        showToast('Please copy from google-apps-script.js');
+      });
+    }
+
+    async function handleTestCloudConnection() {
+      const testLog = document.getElementById('cloudTestLog');
+      testLog.classList.remove('hidden', 'bg-rose-50', 'text-rose-700', 'border-rose-200', 'bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
+      testLog.className = 'p-2.5 rounded-lg text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200';
+      testLog.textContent = 'Testing connection to cloud...';
+
+      if (activeCloudTab === 'googlesheets') {
+        const url = (document.getElementById('cfgGoogleSheetsUrl').value || '').trim();
+        if (!url || !url.startsWith('https://script.google.com/')) {
+          testLog.className = 'p-2.5 rounded-lg text-xs font-medium border bg-rose-50 text-rose-700 border-rose-200';
+          testLog.textContent = 'Error: Please enter a valid Google Apps Script Web App URL starting with https://script.google.com/';
+          return;
+        }
+
+        try {
+          const testUrl = url + (url.includes('?') ? '&' : '?') + 'action=read&t=' + Date.now();
+          const resp = await fetch(testUrl);
+          const res = await resp.json();
+          if (res && res.status === 'success') {
+            testLog.className = 'p-2.5 rounded-lg text-xs font-medium border bg-emerald-50 text-emerald-700 border-emerald-200';
+            testLog.textContent = 'Connection Successful! Google Sheets Cloud Database is ready for team sync.';
+          } else {
+            throw new Error('Unexpected response format');
+          }
+        } catch (err) {
+          testLog.className = 'p-2.5 rounded-lg text-xs font-medium border bg-rose-50 text-rose-700 border-rose-200';
+          testLog.textContent = 'Connection Failed: Could not reach Google Apps Script Web App. Ensure deployment access is set to "Anyone" and the URL ends with /exec.';
+        }
+      } else {
+        const rawCfg = (document.getElementById('cfgFirebaseConfig').value || '').trim();
+        try {
+          const parsed = JSON.parse(rawCfg);
+          if (!parsed.projectId || !parsed.apiKey) throw new Error('Missing projectId or apiKey');
+          testLog.className = 'p-2.5 rounded-lg text-xs font-medium border bg-emerald-50 text-emerald-700 border-emerald-200';
+          testLog.textContent = 'Configuration syntax valid! Click Save & Connect to initialize live sync.';
+        } catch (e) {
+          testLog.className = 'p-2.5 rounded-lg text-xs font-medium border bg-rose-50 text-rose-700 border-rose-200';
+          testLog.textContent = 'Error: Invalid Firebase JSON configuration. Please paste the exact config object from Firebase console.';
+        }
+      }
+    }
+
+    async function handleSaveCloudSync() {
+      const autoSyncVal = document.getElementById('cfgAutoSync').checked;
+
+      if (activeCloudTab === 'googlesheets') {
+        const url = (document.getElementById('cfgGoogleSheetsUrl').value || '').trim();
+        if (!url) {
+          showToast('Please enter Google Apps Script Web App URL');
+          return;
+        }
+        cloudConfig.provider = 'googlesheets';
+        cloudConfig.googleSheetsUrl = url;
+        cloudConfig.autoSync = autoSyncVal;
+        saveCloudConfig();
+        closeCloudSyncModal();
+        showToast('Connecting to Google Sheets Cloud...');
+        await fetchFromCloud(false);
+        startAutoSync();
+      } else {
+        const rawCfg = (document.getElementById('cfgFirebaseConfig').value || '').trim();
+        if (!rawCfg) {
+          showToast('Please enter Firebase Config JSON');
+          return;
+        }
+        cloudConfig.provider = 'firebase';
+        cloudConfig.firebaseConfig = rawCfg;
+        cloudConfig.autoSync = autoSyncVal;
+        saveCloudConfig();
+        closeCloudSyncModal();
+        showToast('Initializing Firebase Realtime Cloud...');
+        setupFirebaseRealtime();
+      }
+    }
+
+    function handleDisconnectCloud() {
+      cloudConfig.provider = 'none';
+      if (cloudSyncTimer) clearInterval(cloudSyncTimer);
+      if (firebaseUnsubscribeSnapshot) firebaseUnsubscribeSnapshot();
+      saveCloudConfig();
+      closeCloudSyncModal();
+      showToast('Switched to Local Browser Storage');
+    }
+
     function loadSavedState() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -871,6 +1477,7 @@
       } catch (e) {
         // Ignore storage errors in sandboxed contexts
       }
+      loadCloudConfig();
     }
 
     function saveState() {
@@ -879,6 +1486,7 @@
       } catch (e) {
         // Ignore storage errors
       }
+      scheduleCloudPush();
     }
 
     function calcProjectMetrics(proj) {
@@ -2362,6 +2970,20 @@
         resetModal.classList.remove('flex');
         showToast('Data reset to initial Excel data');
       });
+
+      // Cloud Sync Events
+      document.getElementById('btnCloudSync').addEventListener('click', openCloudSyncModal);
+      document.getElementById('btnManualSync').addEventListener('click', () => fetchFromCloud(false));
+      document.getElementById('btnCloseCloudSync').addEventListener('click', closeCloudSyncModal);
+      document.getElementById('cloudSyncModal').addEventListener('click', (e) => {
+        if (e.target.id === 'cloudSyncModal') closeCloudSyncModal();
+      });
+      document.getElementById('btnSaveCloudSync').addEventListener('click', handleSaveCloudSync);
+      document.getElementById('btnDisconnectCloud').addEventListener('click', handleDisconnectCloud);
+      document.getElementById('btnTestCloudConnection').addEventListener('click', handleTestCloudConnection);
+      document.getElementById('btnCopyScriptCode').addEventListener('click', handleCopyScriptCode);
+      document.getElementById('tabProviderSheets').addEventListener('click', () => switchCloudProviderTab('googlesheets'));
+      document.getElementById('tabProviderFirebase').addEventListener('click', () => switchCloudProviderTab('firebase'));
     }
 
     function resetFiltersOnly() {
@@ -2419,6 +3041,7 @@
       populateFilterDropdowns();
       initEvents();
       renderAll();
+      initCloudSync();
 
       const progressBar = document.getElementById('loadingProgressBar');
       const statusText = document.getElementById('loadingStatusText');
