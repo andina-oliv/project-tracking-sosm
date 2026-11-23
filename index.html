@@ -1111,6 +1111,13 @@ function doPost(e) {
   }
 }`;
 
+    function getDefaultLaravelApiUrl() {
+      if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
+        return `${window.location.origin}/api`;
+      }
+      return 'http://localhost:8000/api';
+    }
+
     function loadCloudConfig() {
       try {
         const raw = localStorage.getItem(CLOUD_CONFIG_KEY);
@@ -1122,6 +1129,16 @@ function doPost(e) {
         }
       } catch (e) {
         console.warn('Failed to load cloud sync config:', e);
+      }
+
+      // If accessed via web server (HTTP/HTTPS e.g. Docker / LAN / Cloud Domain)
+      if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
+        if (!cloudConfig.laravelApiUrl || cloudConfig.laravelApiUrl === 'http://localhost:8000/api') {
+          cloudConfig.laravelApiUrl = `${window.location.origin}/api`;
+        }
+        if (cloudConfig.provider === 'none') {
+          cloudConfig.provider = 'laravel';
+        }
       }
     }
 
