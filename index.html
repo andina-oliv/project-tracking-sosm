@@ -806,7 +806,8 @@
               Supabase Anon Public API Key *
             </label>
             <input type="password" id="cfgSupabaseKey"
-              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+              placeholder="sb_publishable_..."
+              value="sb_publishable_90pOmsiSFfKH1beHFzXCZQ_4gvuE8uH"
               class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 font-mono" />
             <p class="text-[11px] text-slate-500 mt-1">
               Ditemukan di Supabase Dashboard: <strong>Project Settings (ikon gerigi ⚙️) &gt; Data API</strong>.
@@ -1106,9 +1107,9 @@
     // =========================================================
     const CLOUD_CONFIG_KEY = 'pt_sosm_cloud_sync_config_v1';
     let cloudConfig = {
-      provider: 'none', // 'none' | 'supabase' | 'laravel' | 'googlesheets' | 'firebase'
+      provider: 'supabase', // 'none' | 'supabase' | 'laravel' | 'googlesheets' | 'firebase'
       supabaseUrl: 'https://ciouurnjrujybzvdshfy.supabase.co',
-      supabaseKey: '',
+      supabaseKey: 'sb_publishable_90pOmsiSFfKH1beHFzXCZQ_4gvuE8uH',
       laravelApiUrl: 'http://localhost:8000/api',
       googleSheetsUrl: '',
       firebaseConfig: '',
@@ -1180,14 +1181,15 @@ function doPost(e) {
         console.warn('Failed to load cloud sync config:', e);
       }
 
-      // If accessed via web server (HTTP/HTTPS e.g. Docker / LAN / Cloud Domain)
-      if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
-        if (!cloudConfig.laravelApiUrl || cloudConfig.laravelApiUrl === 'http://localhost:8000/api') {
-          cloudConfig.laravelApiUrl = `${window.location.origin}/api`;
-        }
-        if (cloudConfig.provider === 'none') {
-          cloudConfig.provider = 'laravel';
-        }
+      // Always ensure Supabase Cloud credentials are defaulted if not set
+      if (!cloudConfig.supabaseUrl) {
+        cloudConfig.supabaseUrl = 'https://ciouurnjrujybzvdshfy.supabase.co';
+      }
+      if (!cloudConfig.supabaseKey) {
+        cloudConfig.supabaseKey = 'sb_publishable_90pOmsiSFfKH1beHFzXCZQ_4gvuE8uH';
+      }
+      if (cloudConfig.provider === 'none' || !cloudConfig.provider) {
+        cloudConfig.provider = 'supabase';
       }
     }
 
@@ -1684,7 +1686,7 @@ function doPost(e) {
       const modal = document.getElementById('cloudSyncModal');
       if (!modal) return;
       document.getElementById('cfgSupabaseUrl').value = cloudConfig.supabaseUrl || 'https://ciouurnjrujybzvdshfy.supabase.co';
-      document.getElementById('cfgSupabaseKey').value = cloudConfig.supabaseKey || '';
+      document.getElementById('cfgSupabaseKey').value = cloudConfig.supabaseKey || 'sb_publishable_90pOmsiSFfKH1beHFzXCZQ_4gvuE8uH';
       document.getElementById('cfgLaravelApiUrl').value = cloudConfig.laravelApiUrl || 'http://localhost:8000/api';
       document.getElementById('cfgGoogleSheetsUrl').value = cloudConfig.googleSheetsUrl || '';
       document.getElementById('cfgFirebaseConfig').value = cloudConfig.firebaseConfig || '';
