@@ -750,30 +750,69 @@
 
         <!-- Provider Selection Tabs -->
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1.5">Select Shared Cloud Database:</label>
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" id="tabProviderSheets"
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5">Select Shared Database Provider:</label>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button type="button" id="tabProviderLaravel"
               class="p-3 rounded-xl border-2 text-left transition-all border-blue-600 bg-blue-50/60 text-blue-900">
+              <div class="flex items-center gap-2 mb-1">
+                <i data-lucide="database" class="w-4 h-4 text-rose-600"></i>
+                <span class="text-xs font-bold">Laravel + MySQL</span>
+                <span class="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-rose-100 text-rose-700 rounded">XAMPP</span>
+              </div>
+              <p class="text-[11px] text-slate-600">Central MySQL database via XAMPP. Fast, reliable, ideal for team collaboration on LAN/WiFi.</p>
+            </button>
+            <button type="button" id="tabProviderSheets"
+              class="p-3 rounded-xl border-2 text-left transition-all border-slate-200 bg-white hover:border-slate-300 text-slate-800">
               <div class="flex items-center gap-2 mb-1">
                 <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600"></i>
                 <span class="text-xs font-bold">Google Sheets</span>
-                <span class="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-700 rounded">Recommended</span>
               </div>
-              <p class="text-[11px] text-slate-600">Free, no extra account needed. Stored in Google Drive with full revision history.</p>
+              <p class="text-[11px] text-slate-500">Free, no extra account needed. Stored in Google Drive with full revision history.</p>
             </button>
             <button type="button" id="tabProviderFirebase"
               class="p-3 rounded-xl border-2 text-left transition-all border-slate-200 bg-white hover:border-slate-300 text-slate-800">
               <div class="flex items-center gap-2 mb-1">
                 <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i>
-                <span class="text-xs font-bold">Firebase Realtime</span>
+                <span class="text-xs font-bold">Firebase Live</span>
               </div>
               <p class="text-[11px] text-slate-500">Sub-second live sync without refreshing. Uses free Google Firebase Firestore.</p>
             </button>
           </div>
         </div>
 
+        <!-- Laravel + XAMPP MySQL Configuration Panel -->
+        <div id="panelLaravel" class="space-y-3">
+          <div>
+            <label for="cfgLaravelApiUrl" class="block text-xs font-semibold text-slate-700 mb-1">
+              Laravel Backend API URL *
+            </label>
+            <input type="url" id="cfgLaravelApiUrl"
+              placeholder="http://localhost:8000/api"
+              value="http://localhost:8000/api"
+              class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 font-mono" />
+            <p class="text-[11px] text-slate-500 mt-1">
+              For local testing use <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600">http://localhost:8000/api</code>. For team members across office WiFi/LAN, enter your computer's IP, e.g. <code class="bg-slate-100 px-1 py-0.5 rounded text-blue-600">http://192.168.1.100:8000/api</code>.
+            </p>
+          </div>
+
+          <!-- Instructions Box -->
+          <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-3 space-y-2 text-xs text-slate-700">
+            <span class="font-bold flex items-center gap-1.5 text-slate-800">
+              <i data-lucide="terminal" class="w-4 h-4 text-blue-600"></i>
+              Panduan Cepat XAMPP &amp; Laravel Backend:
+            </span>
+            <ol class="list-decimal list-inside space-y-1 text-[11.5px] text-slate-600 leading-normal pl-1">
+              <li>Buka <strong>XAMPP Control Panel</strong> dan klik <strong>Start MySQL</strong> (Port 3306).</li>
+              <li>Buka phpMyAdmin (<code class="bg-slate-200 px-1 py-0.5 rounded text-[10.5px]">http://localhost/phpmyadmin</code>) &amp; buat database: <code class="bg-slate-200 px-1 py-0.5 rounded text-[10.5px] font-bold">pt_sosm_tracking</code>.</li>
+              <li>Di terminal folder backend jalankan: <code class="bg-slate-200 px-1 py-0.5 rounded text-[10.5px]">php artisan migrate --seed</code></li>
+              <li>Nyalakan server Laravel: <code class="bg-slate-200 px-1 py-0.5 rounded text-[10.5px] font-bold">php artisan serve --host=0.0.0.0 --port=8000</code></li>
+              <li>Klik tombol <strong>Test Connection</strong> di bawah, lalu klik <strong>Save &amp; Connect</strong>!</li>
+            </ol>
+          </div>
+        </div>
+
         <!-- Google Sheets Configuration Panel -->
-        <div id="panelGoogleSheets" class="space-y-3">
+        <div id="panelGoogleSheets" class="space-y-3 hidden">
           <div>
             <label for="cfgGoogleSheetsUrl" class="block text-xs font-semibold text-slate-700 mb-1">
               Google Apps Script Web App URL *
@@ -1022,7 +1061,8 @@
     // =========================================================
     const CLOUD_CONFIG_KEY = 'pt_sosm_cloud_sync_config_v1';
     let cloudConfig = {
-      provider: 'none', // 'none' | 'googlesheets' | 'firebase'
+      provider: 'none', // 'none' | 'laravel' | 'googlesheets' | 'firebase'
+      laravelApiUrl: 'http://localhost:8000/api',
       googleSheetsUrl: '',
       firebaseConfig: '',
       autoSync: true,
@@ -1098,7 +1138,9 @@ function doPost(e) {
       loadCloudConfig();
       updateCloudSyncUI();
 
-      if (cloudConfig.provider === 'firebase' && cloudConfig.firebaseConfig) {
+      if (cloudConfig.provider === 'laravel' && cloudConfig.laravelApiUrl) {
+        fetchFromCloud(true);
+      } else if (cloudConfig.provider === 'firebase' && cloudConfig.firebaseConfig) {
         setupFirebaseRealtime();
       } else if (cloudConfig.provider === 'googlesheets' && cloudConfig.googleSheetsUrl) {
         fetchFromCloud(true);
@@ -1124,7 +1166,16 @@ function doPost(e) {
         lastSyncDisplay.textContent = timeText ? `Last synced: ${timeText}` : 'Not synced yet';
       }
 
-      if (cloudConfig.provider === 'googlesheets') {
+      if (cloudConfig.provider === 'laravel') {
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        if (label) label.textContent = 'Laravel MySQL';
+        if (btn) btn.title = `Connected to Laravel XAMPP MySQL (${timeText ? 'Synced at ' + timeText : 'Connected'}) • Click to manage`;
+        if (banner) {
+          banner.className = 'p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/70 flex items-start gap-3';
+          if (bannerTitle) bannerTitle.textContent = 'Connected: Central Laravel + XAMPP MySQL Database';
+          if (bannerDesc) bannerDesc.textContent = `All project updates and stage progress are directly saved to your central MySQL database. Team members connected via LAN/WiFi can view and edit live! ${timeText ? '(Last synced: ' + timeText + ')' : ''}`;
+        }
+      } else if (cloudConfig.provider === 'googlesheets') {
         if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
         if (label) label.textContent = 'Sheets Cloud';
         if (btn) btn.title = `Connected to Google Sheets (${timeText ? 'Synced at ' + timeText : 'Connected'}) • Click to manage`;
@@ -1145,11 +1196,11 @@ function doPost(e) {
       } else {
         if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-400';
         if (label) label.textContent = 'Connect Cloud';
-        if (btn) btn.title = 'Local Mode: Click to connect Google Sheets or Firebase for multi-user collaboration';
+        if (btn) btn.title = 'Local Mode: Click to connect Laravel MySQL, Google Sheets, or Firebase for multi-user collaboration';
         if (banner) {
           banner.className = 'p-3.5 rounded-xl border border-amber-200 bg-amber-50/70 flex items-start gap-3';
           if (bannerTitle) bannerTitle.textContent = 'Status: Local Browser Storage Only';
-          if (bannerDesc) bannerDesc.textContent = 'Updates are currently stored on this computer only. Connect your team\'s Google Sheets (or Firebase) below so everyone in PT SOSM can view and update the dashboard together!';
+          if (bannerDesc) bannerDesc.textContent = 'Updates are currently stored on this computer only. Connect your team\'s Laravel MySQL database (or Google Sheets) below so everyone in PT SOSM can view and update the dashboard together!';
         }
       }
     }
@@ -1178,7 +1229,31 @@ function doPost(e) {
     }
 
     async function pushToCloud(data) {
-      if (cloudConfig.provider === 'googlesheets' && cloudConfig.googleSheetsUrl) {
+      if (cloudConfig.provider === 'laravel' && cloudConfig.laravelApiUrl) {
+        try {
+          updateCloudSyncIndicator('syncing');
+          const apiUrl = cloudConfig.laravelApiUrl.replace(/\/+$/, '');
+          const resp = await fetch(`${apiUrl}/projects/bulk-sync`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(data)
+          });
+          const res = await resp.json();
+          if (res && res.status === 'success') {
+            cloudConfig.lastSyncTime = new Date().toISOString();
+            saveCloudConfig();
+            updateCloudSyncIndicator('synced');
+          } else {
+            throw new Error(res.message || 'Bulk sync failed');
+          }
+        } catch (err) {
+          console.warn('Laravel MySQL cloud push error:', err);
+          updateCloudSyncIndicator('error');
+        }
+      } else if (cloudConfig.provider === 'googlesheets' && cloudConfig.googleSheetsUrl) {
         try {
           updateCloudSyncIndicator('syncing');
           await fetch(cloudConfig.googleSheetsUrl, {
@@ -1215,7 +1290,72 @@ function doPost(e) {
       const manualIcon = document.getElementById('iconManualSync');
       if (manualIcon) manualIcon.classList.add('animate-spin');
 
-      if (cloudConfig.provider === 'googlesheets' && cloudConfig.googleSheetsUrl) {
+      if (cloudConfig.provider === 'laravel' && cloudConfig.laravelApiUrl) {
+        try {
+          updateCloudSyncIndicator('syncing');
+          const apiUrl = cloudConfig.laravelApiUrl.replace(/\/+$/, '');
+          const resp = await fetch(`${apiUrl}/projects`, {
+            headers: { 'Accept': 'application/json' }
+          });
+          const res = await resp.json();
+          if (res && res.status === 'success' && res.data && Array.isArray(res.data.recruitment) && Array.isArray(res.data.adm)) {
+            // If backend database is empty, seed it with current local data
+            if (res.data.recruitment.length === 0 && res.data.adm.length === 0) {
+              await pushToCloud(state.data);
+              if (!silent) showToast('Database was empty. Seeded initial projects to MySQL!');
+            } else {
+              const incoming = {
+                recruitment: res.data.recruitment.map((p, idx) => ({
+                  id: p.project_id || p.id || `rec-${idx + 1}`,
+                  no: Number(p.no) || (idx + 1),
+                  date: p.date || '2026-11-11',
+                  name: p.name || '',
+                  principal: p.principal || '',
+                  pic: p.pic || '',
+                  activities: p.activities || '',
+                  stages: Array.isArray(p.stages) ? p.stages : [0, 0, 0, 0, 0, 0, 0],
+                  remark: p.remark || ''
+                })),
+                adm: res.data.adm.map((p, idx) => ({
+                  id: p.project_id || p.id || `adm-${idx + 1}`,
+                  no: Number(p.no) || (idx + 1),
+                  date: p.date || '2026-11-11',
+                  name: p.name || '',
+                  principal: p.principal || '',
+                  pic: p.pic || '',
+                  activities: p.activities || '',
+                  stages: Array.isArray(p.stages) ? p.stages : [0, 0, 0, 0, 0, 0, 0],
+                  remark: p.remark || ''
+                }))
+              };
+              const currentStr = JSON.stringify(state.data);
+              const incomingStr = JSON.stringify(incoming);
+              if (currentStr !== incomingStr) {
+                state.data = incoming;
+                localStorage.setItem(STORAGE_KEY, incomingStr);
+                populateFilterDropdowns();
+                renderAll();
+                if (!silent) showToast('Dashboard updated with latest MySQL database changes!');
+              } else {
+                if (!silent) showToast('Already up to date with MySQL Database');
+              }
+            }
+            cloudConfig.lastSyncTime = new Date().toISOString();
+            saveCloudConfig();
+            updateCloudSyncIndicator('synced');
+            return true;
+          } else {
+            throw new Error(res.message || 'Invalid response from Laravel API');
+          }
+        } catch (err) {
+          console.warn('Laravel MySQL fetch error:', err);
+          updateCloudSyncIndicator('error');
+          if (!silent) showToast('Failed to connect to Laravel Backend API');
+          return false;
+        } finally {
+          if (manualIcon) manualIcon.classList.remove('animate-spin');
+        }
+      } else if (cloudConfig.provider === 'googlesheets' && cloudConfig.googleSheetsUrl) {
         try {
           updateCloudSyncIndicator('syncing');
           const url = cloudConfig.googleSheetsUrl + (cloudConfig.googleSheetsUrl.includes('?') ? '&' : '?') + 'action=read&t=' + Date.now();
@@ -1320,25 +1460,29 @@ function doPost(e) {
 
     function startAutoSync() {
       if (cloudSyncTimer) clearInterval(cloudSyncTimer);
-      if (cloudConfig.provider === 'googlesheets' && cloudConfig.autoSync) {
+      if ((cloudConfig.provider === 'googlesheets' || cloudConfig.provider === 'laravel') && cloudConfig.autoSync) {
         cloudSyncTimer = setInterval(() => {
           const modal = document.getElementById('projectModal');
           if (modal && !modal.classList.contains('hidden')) return;
           fetchFromCloud(true);
-        }, 15000);
+        }, 10000);
       }
     }
 
     function openCloudSyncModal() {
       const modal = document.getElementById('cloudSyncModal');
       if (!modal) return;
+      document.getElementById('cfgLaravelApiUrl').value = cloudConfig.laravelApiUrl || 'http://localhost:8000/api';
       document.getElementById('cfgGoogleSheetsUrl').value = cloudConfig.googleSheetsUrl || '';
       document.getElementById('cfgFirebaseConfig').value = cloudConfig.firebaseConfig || '';
       document.getElementById('cfgAutoSync').checked = Boolean(cloudConfig.autoSync);
       const testLog = document.getElementById('cloudTestLog');
       if (testLog) testLog.classList.add('hidden');
 
-      switchCloudProviderTab(cloudConfig.provider === 'firebase' ? 'firebase' : 'googlesheets');
+      const initialTab = (cloudConfig.provider === 'googlesheets' || cloudConfig.provider === 'firebase')
+        ? cloudConfig.provider
+        : 'laravel';
+      switchCloudProviderTab(initialTab);
       updateCloudSyncUI();
 
       modal.classList.remove('hidden');
@@ -1352,25 +1496,26 @@ function doPost(e) {
       modal.classList.remove('flex');
     }
 
-    let activeCloudTab = 'googlesheets';
+    let activeCloudTab = 'laravel';
     function switchCloudProviderTab(provider) {
       activeCloudTab = provider;
+      const tabLaravel = document.getElementById('tabProviderLaravel');
       const tabSheets = document.getElementById('tabProviderSheets');
       const tabFirebase = document.getElementById('tabProviderFirebase');
+      const panelLaravel = document.getElementById('panelLaravel');
       const panelSheets = document.getElementById('panelGoogleSheets');
       const panelFirebase = document.getElementById('panelFirebase');
 
-      if (provider === 'googlesheets') {
-        tabSheets.className = 'p-3 rounded-xl border-2 text-left transition-all border-blue-600 bg-blue-50/60 text-blue-900';
-        tabFirebase.className = 'p-3 rounded-xl border-2 text-left transition-all border-slate-200 bg-white hover:border-slate-300 text-slate-800';
-        panelSheets.classList.remove('hidden');
-        panelFirebase.classList.add('hidden');
-      } else {
-        tabFirebase.className = 'p-3 rounded-xl border-2 text-left transition-all border-blue-600 bg-blue-50/60 text-blue-900';
-        tabSheets.className = 'p-3 rounded-xl border-2 text-left transition-all border-slate-200 bg-white hover:border-slate-300 text-slate-800';
-        panelFirebase.classList.remove('hidden');
-        panelSheets.classList.add('hidden');
-      }
+      const activeClass = 'p-3 rounded-xl border-2 text-left transition-all border-blue-600 bg-blue-50/60 text-blue-900';
+      const inactiveClass = 'p-3 rounded-xl border-2 text-left transition-all border-slate-200 bg-white hover:border-slate-300 text-slate-800';
+
+      if (tabLaravel) tabLaravel.className = provider === 'laravel' ? activeClass : inactiveClass;
+      if (tabSheets) tabSheets.className = provider === 'googlesheets' ? activeClass : inactiveClass;
+      if (tabFirebase) tabFirebase.className = provider === 'firebase' ? activeClass : inactiveClass;
+
+      if (panelLaravel) panelLaravel.classList.toggle('hidden', provider !== 'laravel');
+      if (panelSheets) panelSheets.classList.toggle('hidden', provider !== 'googlesheets');
+      if (panelFirebase) panelFirebase.classList.toggle('hidden', provider !== 'firebase');
     }
 
     function handleCopyScriptCode() {
@@ -1385,9 +1530,32 @@ function doPost(e) {
       const testLog = document.getElementById('cloudTestLog');
       testLog.classList.remove('hidden', 'bg-rose-50', 'text-rose-700', 'border-rose-200', 'bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
       testLog.className = 'p-2.5 rounded-lg text-xs font-medium border bg-blue-50 text-blue-700 border-blue-200';
-      testLog.textContent = 'Testing connection to cloud...';
+      testLog.textContent = 'Testing connection to database service...';
 
-      if (activeCloudTab === 'googlesheets') {
+      if (activeCloudTab === 'laravel') {
+        const url = (document.getElementById('cfgLaravelApiUrl').value || '').trim();
+        if (!url || !url.startsWith('http')) {
+          testLog.className = 'p-2.5 rounded-lg text-xs font-medium border bg-rose-50 text-rose-700 border-rose-200';
+          testLog.textContent = 'Error: Please enter a valid Laravel API URL starting with http:// or https:// (e.g. http://localhost:8000/api)';
+          return;
+        }
+
+        try {
+          const healthUrl = `${url.replace(/\/+$/, '')}/health?t=${Date.now()}`;
+          const resp = await fetch(healthUrl);
+          const res = await resp.json();
+          if (res && res.status === 'ok') {
+            const dbText = res.database_connected ? 'Connected to XAMPP MySQL' : 'MySQL Database not connected yet (check phpMyAdmin)';
+            testLog.className = 'p-2.5 rounded-lg text-xs font-medium border bg-emerald-50 text-emerald-700 border-emerald-200';
+            testLog.textContent = `Connection Successful! Laravel ${res.laravel || ''} is running. Database: ${dbText}. Ready for team collaboration!`;
+          } else {
+            throw new Error(res.message || 'Unexpected response');
+          }
+        } catch (err) {
+          testLog.className = 'p-2.5 rounded-lg text-xs font-medium border bg-rose-50 text-rose-700 border-rose-200';
+          testLog.textContent = `Connection Failed: Could not connect to Laravel API at "${url}". Make sure XAMPP MySQL and "php artisan serve --host=0.0.0.0 --port=8000" are running.`;
+        }
+      } else if (activeCloudTab === 'googlesheets') {
         const url = (document.getElementById('cfgGoogleSheetsUrl').value || '').trim();
         if (!url || !url.startsWith('https://script.google.com/')) {
           testLog.className = 'p-2.5 rounded-lg text-xs font-medium border bg-rose-50 text-rose-700 border-rose-200';
@@ -1426,7 +1594,21 @@ function doPost(e) {
     async function handleSaveCloudSync() {
       const autoSyncVal = document.getElementById('cfgAutoSync').checked;
 
-      if (activeCloudTab === 'googlesheets') {
+      if (activeCloudTab === 'laravel') {
+        const url = (document.getElementById('cfgLaravelApiUrl').value || '').trim();
+        if (!url) {
+          showToast('Please enter Laravel Backend API URL');
+          return;
+        }
+        cloudConfig.provider = 'laravel';
+        cloudConfig.laravelApiUrl = url;
+        cloudConfig.autoSync = autoSyncVal;
+        saveCloudConfig();
+        closeCloudSyncModal();
+        showToast('Connecting to Laravel MySQL Database...');
+        await fetchFromCloud(false);
+        startAutoSync();
+      } else if (activeCloudTab === 'googlesheets') {
         const url = (document.getElementById('cfgGoogleSheetsUrl').value || '').trim();
         if (!url) {
           showToast('Please enter Google Apps Script Web App URL');
@@ -2982,6 +3164,7 @@ function doPost(e) {
       document.getElementById('btnDisconnectCloud').addEventListener('click', handleDisconnectCloud);
       document.getElementById('btnTestCloudConnection').addEventListener('click', handleTestCloudConnection);
       document.getElementById('btnCopyScriptCode').addEventListener('click', handleCopyScriptCode);
+      document.getElementById('tabProviderLaravel').addEventListener('click', () => switchCloudProviderTab('laravel'));
       document.getElementById('tabProviderSheets').addEventListener('click', () => switchCloudProviderTab('googlesheets'));
       document.getElementById('tabProviderFirebase').addEventListener('click', () => switchCloudProviderTab('firebase'));
     }
