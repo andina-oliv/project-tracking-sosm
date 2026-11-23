@@ -3012,6 +3012,61 @@ function doPost(e) {
       window.print();
     }
 
+    // Centralized project delete handler connected to Supabase Cloud
+    async function executeProjectDelete(id) {
+      if (!id) return;
+      const list = getActiveList();
+      const idx = list.findIndex(p => p.id === id);
+      if (idx === -1) return;
+
+      const proj = list[idx];
+      const projLabel = proj.name && proj.name.trim() ? `Project #${proj.no} ("${proj.name.trim()}")` : `Project #${proj.no}`;
+
+      // 1. Remove from local memory immediately for snappy UI
+      list.splice(idx, 1);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+      } catch (e) {}
+
+      populateFilterDropdowns();
+      renderAll();
+
+      // 2. Perform remote delete on Supabase Cloud
+      if (cloudConfig.provider === 'supabase') {
+        if (!supabaseClient) setupSupabaseRealtime();
+        if (supabaseClient) {
+          updateCloudSyncIndicator('syncing');
+          try {
+            const { error } = await supabaseClient.from('projects').delete().eq('id', id);
+            if (error) {
+              console.error('Supabase delete error:', error);
+              showToast('Error deleting from Supabase: ' + error.message);
+              updateCloudSyncIndicator('error');
+              return;
+            }
+            cloudConfig.lastSyncTime = new Date().toISOString();
+            saveCloudConfig();
+            updateCloudSyncIndicator('synced');
+          } catch (err) {
+            console.error('Supabase delete exception:', err);
+            updateCloudSyncIndicator('error');
+          }
+        }
+      } else if (cloudConfig.provider === 'laravel' && cloudConfig.laravelApiUrl) {
+        try {
+          updateCloudSyncIndicator('syncing');
+          await fetch(`${cloudConfig.laravelApiUrl.replace(/\/+$/, '')}/projects/${encodeURIComponent(id)}`, {
+            method: 'DELETE'
+          });
+          updateCloudSyncIndicator('synced');
+        } catch (e) {}
+      } else {
+        scheduleCloudPush();
+      }
+
+      showToast(`${projLabel} deleted permanently from Supabase Cloud`);
+    }
+
     // =========================================================
     // 6. EVENT LISTENERS
     // =========================================================
@@ -3271,6 +3326,19 @@ function doPost(e) {
             renderAll();
             const stageLabel = STAGE_CONFIG[state.division][idx].label;
             showToast(`Project #${proj.no}: ${stageLabel} ${proj.stages[idx] ? 'completed' : 'unchecked'}`);
+
+            // Direct instant update to Supabase Cloud
+            if (cloudConfig.provider === 'supabase') {
+              if (!supabaseClient) setupSupabaseRealtime();
+              if (supabaseClient) {
+                supabaseClient.from('projects').update({
+                  stages: proj.stages,
+                  updated_at: new Date().toISOString()
+                }).eq('id', id).then(({ error }) => {
+                  if (error) console.error('Supabase stage update error:', error);
+                });
+              }
+            }
           }
           return;
         }
@@ -3284,19 +3352,11 @@ function doPost(e) {
         const deleteBtn = e.target.closest('[data-delete-id]');
         if (deleteBtn) {
           const id = deleteBtn.getAttribute('data-delete-id');
-          const list = getActiveList();
-          const proj = list.find(p => p.id === id);
+          const proj = getActiveList().find(p => p.id === id);
           if (!proj) return;
           const projLabel = proj.name && proj.name.trim() ? `Project #${proj.no} ("${proj.name.trim()}")` : `Project #${proj.no}`;
-          if (confirm(`Are you sure you want to delete ${projLabel}?`)) {
-            const idx = list.findIndex(p => p.id === id);
-            if (idx !== -1) {
-              list.splice(idx, 1);
-              saveState();
-              populateFilterDropdowns();
-              renderAll();
-              showToast(`Project #${proj.no} deleted`);
-            }
+          if (confirm(`Are you sure you want to permanently delete ${projLabel} from Supabase Cloud?`)) {
+            executeProjectDelete(id);
           }
           return;
         }
@@ -3369,6 +3429,9 @@ function doPost(e) {
         }
 
         saveState();
+        if (cloudConfig.provider === 'supabase') {
+          pushToCloud(state.data);
+        }
         populateFilterDropdowns();
         renderAll();
         closeProjectModal();
@@ -3377,18 +3440,11 @@ function doPost(e) {
       document.getElementById('btnDeleteProject').addEventListener('click', () => {
         const id = document.getElementById('formProjectId').value;
         if (!id) return;
-        const list = getActiveList();
-        const idx = list.findIndex(p => p.id === id);
-        if (idx !== -1) {
-          list.splice(idx, 1);
-          if (cloudConfig.provider === 'supabase' && supabaseClient) {
-            supabaseClient.from('projects').delete().eq('id', id).then();
-          }
-          saveState();
-          populateFilterDropdowns();
-          renderAll();
+        const proj = getActiveList().find(p => p.id === id);
+        const projLabel = proj && proj.name && proj.name.trim() ? `Project #${proj.no} ("${proj.name.trim()}")` : `Project`;
+        if (confirm(`Are you sure you want to permanently delete ${projLabel} from Supabase Cloud?`)) {
           closeProjectModal();
-          showToast('Project deleted');
+          executeProjectDelete(id);
         }
       });
 
