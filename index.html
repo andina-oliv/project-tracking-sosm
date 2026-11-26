@@ -174,13 +174,6 @@
             <i data-lucide="file-text" class="w-4 h-4"></i>
             <span class="hidden sm:inline">Export PDF</span>
           </button>
-          <button type="button" id="btnUploadFile"
-            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-sky-600 border border-gray-600 text-gray-100 text-xs sm:text-sm font-medium transition-colors"
-            title="Upload File">
-            <i data-lucide="upload" class="w-4 h-4"></i>
-            <span class="hidden sm:inline">Upload File</span>
-          </button>
-          <input type="file" id="fileUploadInput" class="hidden" accept=".xlsx,.xls,.csv,.json,.pdf,image/*,application/*" />
           <!-- Team Cloud Sync Indicator & Settings Button -->
           <button type="button" id="btnCloudSync"
             class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white text-xs sm:text-sm font-medium transition-colors"
@@ -3019,135 +3012,6 @@ function doPost(e) {
       window.print();
     }
 
-    function handleFileUpload(e) {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-
-      const fileName = file.name;
-      const lowerName = fileName.toLowerCase();
-
-      // If it's an Excel or CSV file, support smart parsing & importing
-      if (lowerName.endsWith('.xlsx') || lowerName.endsWith('.xls') || lowerName.endsWith('.csv')) {
-        if (typeof XLSX === 'undefined') {
-          showToast(`File "${fileName}" terpilih (library XLSX belum siap)`);
-          e.target.value = '';
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          try {
-            const data = new Uint8Array(evt.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-            if (!jsonRows || jsonRows.length < 2) {
-              showToast(`File "${fileName}" kosong atau format tidak sesuai`);
-              return;
-            }
-
-            const headerRow = jsonRows[0].map(h => (h || '').toString().toLowerCase().trim());
-            const findCol = (keywords) => headerRow.findIndex(h => keywords.some(k => h.includes(k)));
-
-            const nameIdx = findCol(['name of project', 'project name', 'project', 'nama project', 'nama']);
-            const dateIdx = findCol(['date', 'tanggal']);
-            const principalIdx = findCol(['principal', 'principals']);
-            const picIdx = findCol(['person of incharge', 'pic', 'incharge']);
-            const actIdx = findCol(['activities', 'activity', 'aktivitas']);
-            const remarkIdx = findCol(['remark', 'issue', 'catatan']);
-
-            const list = getActiveList();
-            const stagesMeta = STAGE_CONFIG[state.division];
-            let importedCount = 0;
-
-            for (let r = 1; r < jsonRows.length; r++) {
-              const row = jsonRows[r];
-              if (!row || row.length === 0) continue;
-              const name = nameIdx !== -1 && row[nameIdx] ? String(row[nameIdx]).trim() : '';
-              if (!name) continue;
-
-              const date = dateIdx !== -1 && row[dateIdx] ? String(row[dateIdx]).trim() : new Date().toISOString().slice(0, 10);
-              const principal = principalIdx !== -1 && row[principalIdx] ? String(row[principalIdx]).trim() : '';
-              const pic = picIdx !== -1 && row[picIdx] ? String(row[picIdx]).trim() : '';
-              const activities = actIdx !== -1 && row[actIdx] ? String(row[actIdx]).trim() : '';
-              const remark = remarkIdx !== -1 && row[remarkIdx] ? String(row[remarkIdx]).trim() : '';
-
-              const stages = stagesMeta.map((s) => {
-                const sCol = findCol([s.label.toLowerCase()]);
-                if (sCol !== -1 && row[sCol] !== undefined) {
-                  const val = String(row[sCol]).trim().toLowerCase();
-                  return (val === '1' || val === 'yes' || val === 'true' || val === 'v' || val === 'done') ? 1 : 0;
-                }
-                return 0;
-              });
-
-              const maxNo = list.reduce((max, p) => Math.max(max, p.no || 0), 0);
-              list.push({
-                id: `${state.division}-${Date.now()}-${r}`,
-                no: maxNo + 1,
-                date,
-                name,
-                principal,
-                pic,
-                activities,
-                stages,
-                remark
-              });
-              importedCount++;
-            }
-
-            if (importedCount > 0) {
-              saveState();
-              if (cloudConfig.provider === 'supabase') {
-                pushToCloud(state.data);
-              }
-              populateFilterDropdowns();
-              renderAll();
-              showToast(`Berhasil upload & import ${importedCount} project dari "${fileName}"`);
-            } else {
-              showToast(`File "${fileName}" berhasil diupload`);
-            }
-          } catch (err) {
-            console.error('Error importing Excel/CSV:', err);
-            showToast(`Gagal membaca file "${fileName}": ${err.message}`);
-          }
-        };
-        reader.readAsArrayBuffer(file);
-      } else if (lowerName.endsWith('.json')) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          try {
-            const parsed = JSON.parse(evt.target.result);
-            if (parsed.recruitment && parsed.adm) {
-              state.data = parsed;
-            } else if (Array.isArray(parsed)) {
-              state.data[state.division] = parsed;
-            } else {
-              showToast(`Format JSON tidak dikenali`);
-              return;
-            }
-            saveState();
-            if (cloudConfig.provider === 'supabase') {
-              pushToCloud(state.data);
-            }
-            populateFilterDropdowns();
-            renderAll();
-            showToast(`Berhasil upload & import data JSON dari "${fileName}"`);
-          } catch (err) {
-            console.error('Error importing JSON:', err);
-            showToast(`Gagal membaca JSON: ${err.message}`);
-          }
-        };
-        reader.readAsText(file);
-      } else {
-        showToast(`File "${fileName}" (${(file.size / 1024).toFixed(1)} KB) berhasil diupload`);
-      }
-
-      e.target.value = '';
-    }
-
     // Centralized project delete handler connected to Supabase Cloud
     async function executeProjectDelete(id) {
       if (!id) return;
@@ -3515,10 +3379,6 @@ function doPost(e) {
       document.getElementById('btnExportCsv').addEventListener('click', exportCurrentCsv);
       document.getElementById('btnExportExcel').addEventListener('click', exportCurrentExcel);
       document.getElementById('btnExportPdf').addEventListener('click', exportCurrentPdf);
-      document.getElementById('btnUploadFile').addEventListener('click', () => {
-        document.getElementById('fileUploadInput').click();
-      });
-      document.getElementById('fileUploadInput').addEventListener('change', handleFileUpload);
 
       // Modal close & submit
       document.getElementById('btnCloseModal').addEventListener('click', closeProjectModal);
