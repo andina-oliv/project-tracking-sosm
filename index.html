@@ -174,6 +174,14 @@
             <i data-lucide="file-text" class="w-4 h-4"></i>
             <span class="hidden sm:inline">Export PDF</span>
           </button>
+          <!-- Document Storage CRUD Button -->
+          <button type="button" id="btnOpenDocManager"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-medium transition-colors shadow-sm"
+            title="Penyimpanan Dokumen & File (CRUD Dokumen)">
+            <i data-lucide="folder-archive" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Dokumen</span>
+            <span id="docBadgeCount" class="bg-indigo-900/80 text-white text-[10px] px-1.5 py-0.2 rounded-full font-bold ml-0.5">0</span>
+          </button>
           <!-- Team Cloud Sync Indicator & Settings Button -->
           <button type="button" id="btnCloudSync"
             class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 border border-gray-600 text-white text-xs sm:text-sm font-medium transition-colors"
@@ -940,6 +948,258 @@
             Save &amp; Connect
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Document Manager Modal (CRUD Dokumen & File) -->
+  <div id="docManagerModal"
+    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-5">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden fade-in border border-slate-100">
+      <!-- Modal Header -->
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 shadow-xs">
+            <i data-lucide="folder-archive" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              Penyimpanan Dokumen &amp; File
+              <span id="docHeaderBadge" class="bg-indigo-100 text-indigo-700 text-xs px-2 py-0.5 rounded-full font-semibold">0 Dokumen</span>
+            </h3>
+            <p class="text-xs text-slate-500">Kelola dokumen, beri nama kustom, lihat/preview, dan simpan salinan ke folder Download laptop</p>
+          </div>
+        </div>
+        <button type="button" id="btnCloseDocManager" aria-label="Close Modal"
+          class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Toolbar & Filters -->
+      <div class="p-4 sm:p-5 border-b border-slate-200 bg-white flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex flex-1 items-center gap-2.5 flex-wrap sm:flex-nowrap">
+          <!-- Search input -->
+          <div class="relative w-full sm:w-64">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            <input type="text" id="docSearchInput" placeholder="Cari nama dokumen, file, catatan..."
+              class="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500" />
+          </div>
+          <!-- Category Filter -->
+          <select id="docCategoryFilter"
+            class="px-3 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 bg-white text-slate-700">
+            <option value="">Semua Kategori</option>
+            <option value="Recruitment">Recruitment</option>
+            <option value="ADM/Finance">ADM/Finance</option>
+            <option value="Kontrak">Kontrak</option>
+            <option value="Laporan">Laporan</option>
+            <option value="Legal">Dokumen Legal</option>
+            <option value="Sertifikat">Sertifikat / Crew</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="button" id="btnOpenAddDocForm"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold transition-colors shadow-sm">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>+ Tambah Dokumen</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Storage Status -->
+      <div class="px-5 py-2.5 bg-slate-50 border-b border-slate-200 text-xs text-slate-600 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>Penyimpanan: <strong>IndexedDB Laptop</strong> (Aman, Persisten &amp; Tanpa Batas Kuota)</span>
+        </div>
+        <div id="docStorageSummary" class="text-slate-500 text-[11px]">
+          Total: <span id="docTotalCountText" class="font-bold text-slate-700">0</span> berkas • Ukuran: <span id="docTotalSizeText" class="font-bold text-slate-700">0 B</span>
+        </div>
+      </div>
+
+      <!-- Documents List (Table / Cards) -->
+      <div class="p-4 sm:p-5 flex-1 overflow-y-auto custom-scrollbar">
+        <!-- Empty State -->
+        <div id="docEmptyState" class="hidden py-14 px-4 text-center">
+          <div class="w-14 h-14 mx-auto rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center mb-3">
+            <i data-lucide="folder-open" class="w-7 h-7"></i>
+          </div>
+          <h4 class="text-sm font-bold text-slate-800">Belum Ada Dokumen Tersimpan</h4>
+          <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            Mulai simpan dokumen penting Anda. Beri nama kustom, lihat/preview kapan saja, dan unduh salinannya langsung ke laptop.
+          </p>
+          <button type="button" id="btnEmptyAddDoc"
+            class="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition-colors">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span>+ Upload Dokumen Pertama</span>
+          </button>
+        </div>
+
+        <!-- Table Container -->
+        <div id="docTableContainer" class="border border-slate-200 rounded-xl overflow-hidden shadow-2xs bg-white">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-semibold uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th class="py-3 px-3.5">Nama Dokumen</th>
+                  <th class="py-3 px-3">Kategori</th>
+                  <th class="py-3 px-3">File Asli &amp; Ukuran</th>
+                  <th class="py-3 px-3">Tanggal Disimpan</th>
+                  <th class="py-3 px-3">Catatan</th>
+                  <th class="py-3 px-3.5 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="docTableBody" class="divide-y divide-slate-100">
+                <!-- Dynamic document rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t border-slate-200 bg-slate-50 flex items-center justify-between text-xs">
+        <span class="text-slate-500 text-[11.5px] flex items-center gap-1">
+          <i data-lucide="info" class="w-3.5 h-3.5 text-indigo-500 shrink-0"></i>
+          Setiap dokumen tersimpan di browser dan dapat langsung diunduh ke folder Download laptop kapan saja.
+        </span>
+        <button type="button" id="btnDoneDocManager"
+          class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-white transition-colors">
+          Tutup
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Document Add / Edit Form Modal -->
+  <div id="docFormModal"
+    class="fixed inset-0 z-60 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden fade-in border border-slate-100">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+            <i data-lucide="file-plus" id="docFormIcon" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-slate-900" id="docFormModalTitle">Tambah Dokumen Baru</h3>
+            <p class="text-xs text-slate-500">Isi nama dokumen dan pilih berkas yang ingin disimpan</p>
+          </div>
+        </div>
+        <button type="button" id="btnCloseDocForm" aria-label="Close Modal"
+          class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="docFormElement" class="p-5 overflow-y-auto space-y-4 text-xs">
+        <input type="hidden" id="docFormId" value="" />
+
+        <div>
+          <label for="docFormTitle" class="block font-semibold text-slate-700 mb-1">
+            Nama Dokumen / Judul Dokumen <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" id="docFormTitle" required
+            placeholder="Contoh: Kontrak Crew Vessel MV Alpha - Nov 2026"
+            class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 font-medium" />
+          <p class="text-[11px] text-slate-400 mt-1">Nama kustom ini digunakan sebagai identitas dokumen dan nama file saat diunduh ke laptop.</p>
+        </div>
+
+        <div>
+          <label for="docFormCategory" class="block font-semibold text-slate-700 mb-1">
+            Kategori / Divisi <span class="text-rose-500">*</span>
+          </label>
+          <select id="docFormCategory" required
+            class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 bg-white">
+            <option value="Recruitment">Recruitment Division</option>
+            <option value="ADM/Finance">ADM / Finance Division</option>
+            <option value="Kontrak">Kontrak Kerja / Perjanjian</option>
+            <option value="Laporan">Laporan Bulanan / Proyek</option>
+            <option value="Legal">Dokumen Legal &amp; Perizinan</option>
+            <option value="Sertifikat">Sertifikat / Crew Passport</option>
+            <option value="Lainnya">Lain-lain</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="docFormFileInput" class="block font-semibold text-slate-700 mb-1">
+            File / Berkas Dokumen <span id="docFileRequiredIndicator" class="text-rose-500">*</span>
+          </label>
+          <input type="file" id="docFormFileInput"
+            class="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer border border-slate-300 rounded-lg p-1.5 focus:outline-none" />
+          <p id="docFileCurrentInfo" class="hidden text-[11px] text-slate-500 mt-1 font-medium bg-slate-50 p-2 rounded border border-slate-200">
+            File saat ini: <strong id="docFileCurrentName" class="text-slate-700"></strong> (<span id="docFileCurrentSize"></span>) — Biarkan kosong jika tidak ingin mengganti file.
+          </p>
+          <p class="text-[11px] text-slate-400 mt-1">Mendukung PDF, Excel (.xlsx, .xls), Word (.docx), CSV, Gambar (PNG, JPG), ZIP, dan dokumen lainnya.</p>
+        </div>
+
+        <div>
+          <label for="docFormNotes" class="block font-semibold text-slate-700 mb-1">
+            Catatan / Keterangan Dokumen <span class="text-slate-400 font-normal">(Opsional)</span>
+          </label>
+          <textarea id="docFormNotes" rows="2"
+            placeholder="Keterangan tambahan mengenai nomor surat, tanggal berlaku, atau catatan khusus..."
+            class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"></textarea>
+        </div>
+
+        <!-- Auto Download Option -->
+        <div class="rounded-xl border border-indigo-100 bg-indigo-50/60 p-3">
+          <label class="flex items-start gap-2.5 cursor-pointer select-none">
+            <input type="checkbox" id="docFormAutoDownload" checked
+              class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 mt-0.5" />
+            <div class="text-xs">
+              <span class="font-semibold text-slate-800">Simpan / Download salinan langsung ke folder Download laptop</span>
+              <p class="text-[11px] text-slate-500 mt-0.5">Saat disimpan, browser akan otomatis mengunduh file ini ke laptop Anda sesuai nama dokumen yang dimasukkan.</p>
+            </div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+          <button type="button" id="btnCancelDocForm"
+            class="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-xs font-medium text-slate-700 transition-colors">
+            Batal
+          </button>
+          <button type="submit" id="btnSaveDocSubmit"
+            class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-xs font-semibold text-white shadow-sm transition-colors inline-flex items-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span id="btnSaveDocLabel">Simpan Dokumen</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Document Preview Modal -->
+  <div id="docPreviewModal"
+    class="fixed inset-0 z-60 hidden items-center justify-center bg-slate-900/70 backdrop-blur-xs p-3 sm:p-5">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full h-[88vh] flex flex-col overflow-hidden fade-in border border-slate-100">
+      <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2.5 min-w-0 pr-4">
+          <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+            <i data-lucide="eye" class="w-4 h-4"></i>
+          </div>
+          <div class="min-w-0">
+            <h3 id="docPreviewTitle" class="text-xs sm:text-sm font-bold text-slate-900 truncate">Preview Dokumen</h3>
+            <p id="docPreviewSubtitle" class="text-[11px] text-slate-500 truncate"></p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="button" id="btnPreviewDownload"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors shadow-2xs">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Unduh ke Laptop</span>
+          </button>
+          <button type="button" id="btnCloseDocPreview" aria-label="Close Preview"
+            class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Preview Body -->
+      <div id="docPreviewBody" class="flex-1 bg-slate-100 flex items-center justify-center overflow-auto p-4 relative">
+        <!-- Injected image, iframe PDF, or fallback placeholder -->
       </div>
     </div>
   </div>
@@ -3068,6 +3328,573 @@ function doPost(e) {
     }
 
     // =========================================================
+    // 5B. DOCUMENT STORAGE CRUD (IndexedDB & Laptop Download)
+    // =========================================================
+    const DOC_DB_NAME = 'PTSOSM_DocumentStorageDB';
+    const DOC_DB_VERSION = 1;
+    const DOC_STORE_NAME = 'documents';
+    let docDBInstance = null;
+    let docListCache = [];
+    let activeDocPreviewUrl = null;
+    let activePreviewDoc = null;
+
+    function getDocDB() {
+      return new Promise((resolve, reject) => {
+        if (docDBInstance) return resolve(docDBInstance);
+        const req = indexedDB.open(DOC_DB_NAME, DOC_DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(DOC_STORE_NAME)) {
+            const store = db.createObjectStore(DOC_STORE_NAME, { keyPath: 'id' });
+            store.createIndex('title', 'title', { unique: false });
+            store.createIndex('category', 'category', { unique: false });
+            store.createIndex('uploadedAt', 'uploadedAt', { unique: false });
+          }
+        };
+        req.onsuccess = () => {
+          docDBInstance = req.result;
+          resolve(docDBInstance);
+        };
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function docDBGetAll() {
+      try {
+        const db = await getDocDB();
+        return new Promise((resolve, reject) => {
+          const tx = db.transaction(DOC_STORE_NAME, 'readonly');
+          const store = tx.objectStore(DOC_STORE_NAME);
+          const req = store.getAll();
+          req.onsuccess = () => {
+            const list = req.result || [];
+            list.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+            resolve(list);
+          };
+          req.onerror = () => reject(req.error);
+        });
+      } catch (err) {
+        console.error('Error docDBGetAll:', err);
+        return [];
+      }
+    }
+
+    async function docDBGet(id) {
+      const db = await getDocDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DOC_STORE_NAME, 'readonly');
+        const store = tx.objectStore(DOC_STORE_NAME);
+        const req = store.get(id);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function docDBSave(docRecord) {
+      const db = await getDocDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DOC_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(DOC_STORE_NAME);
+        const req = store.put(docRecord);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function docDBDelete(id) {
+      const db = await getDocDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(DOC_STORE_NAME, 'readwrite');
+        const store = tx.objectStore(DOC_STORE_NAME);
+        const req = store.delete(id);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function formatDocFileSize(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function formatDocDateTime(dateInput) {
+      if (!dateInput) return '-';
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return String(dateInput);
+      return d.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function getDocFileMeta(fileName, fileType) {
+      const fn = (fileName || '').toLowerCase();
+      const ft = (fileType || '').toLowerCase();
+
+      if (ft.includes('pdf') || fn.endsWith('.pdf')) {
+        return { icon: 'file-text', color: 'bg-rose-100 text-rose-700', label: 'PDF' };
+      }
+      if (ft.includes('sheet') || ft.includes('excel') || fn.endsWith('.xlsx') || fn.endsWith('.xls') || fn.endsWith('.csv')) {
+        return { icon: 'file-spreadsheet', color: 'bg-emerald-100 text-emerald-700', label: 'Spreadsheet' };
+      }
+      if (ft.includes('word') || ft.includes('document') || fn.endsWith('.docx') || fn.endsWith('.doc')) {
+        return { icon: 'file-text', color: 'bg-blue-100 text-blue-700', label: 'Word' };
+      }
+      if (ft.includes('image') || fn.endsWith('.png') || fn.endsWith('.jpg') || fn.endsWith('.jpeg') || fn.endsWith('.webp')) {
+        return { icon: 'image', color: 'bg-amber-100 text-amber-700', label: 'Gambar' };
+      }
+      if (fn.endsWith('.zip') || fn.endsWith('.rar') || fn.endsWith('.7z')) {
+        return { icon: 'archive', color: 'bg-purple-100 text-purple-700', label: 'Arsip' };
+      }
+      return { icon: 'file', color: 'bg-slate-100 text-slate-700', label: 'Berkas' };
+    }
+
+    function getDocCategoryBadge(cat) {
+      const c = cat || 'Lainnya';
+      const map = {
+        'Recruitment': 'bg-blue-50 text-blue-700 border-blue-200',
+        'ADM/Finance': 'bg-indigo-50 text-indigo-700 border-indigo-200',
+        'Kontrak': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        'Laporan': 'bg-amber-50 text-amber-700 border-amber-200',
+        'Legal': 'bg-purple-50 text-purple-700 border-purple-200',
+        'Sertifikat': 'bg-teal-50 text-teal-700 border-teal-200',
+        'Lainnya': 'bg-slate-50 text-slate-700 border-slate-200'
+      };
+      const cls = map[c] || map['Lainnya'];
+      return `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium border ${cls}">${escapeHtml(c)}</span>`;
+    }
+
+    function triggerLaptopDownload(blob, customTitle, originalFileName) {
+      try {
+        let ext = '';
+        if (originalFileName && originalFileName.includes('.')) {
+          ext = originalFileName.substring(originalFileName.lastIndexOf('.'));
+        }
+        let safeName = (customTitle || 'Dokumen').replace(/[\\/:*?"<>|]/g, '_').trim();
+        if (ext && !safeName.toLowerCase().endsWith(ext.toLowerCase())) {
+          safeName += ext;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = safeName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        return true;
+      } catch (err) {
+        console.error('Trigger download error:', err);
+        return false;
+      }
+    }
+
+    async function updateDocBadgeCount() {
+      try {
+        const list = await docDBGetAll();
+        docListCache = list;
+        const count = list.length;
+        const badge = document.getElementById('docBadgeCount');
+        if (badge) badge.textContent = count;
+        const headerBadge = document.getElementById('docHeaderBadge');
+        if (headerBadge) headerBadge.textContent = `${count} Dokumen`;
+      } catch (e) {
+        console.warn('Error updateDocBadgeCount:', e);
+      }
+    }
+
+    async function loadAndRenderDocuments() {
+      try {
+        const list = await docDBGetAll();
+        docListCache = list;
+
+        const count = list.length;
+        const badge = document.getElementById('docBadgeCount');
+        if (badge) badge.textContent = count;
+        const headerBadge = document.getElementById('docHeaderBadge');
+        if (headerBadge) headerBadge.textContent = `${count} Dokumen`;
+
+        let totalBytes = 0;
+        list.forEach(d => { totalBytes += (d.fileSize || 0); });
+
+        const countText = document.getElementById('docTotalCountText');
+        if (countText) countText.textContent = count;
+        const sizeText = document.getElementById('docTotalSizeText');
+        if (sizeText) sizeText.textContent = formatDocFileSize(totalBytes);
+
+        // Filter by search & category
+        const searchVal = (document.getElementById('docSearchInput')?.value || '').toLowerCase().trim();
+        const catVal = document.getElementById('docCategoryFilter')?.value || '';
+
+        const filtered = list.filter(d => {
+          if (catVal && d.category !== catVal) return false;
+          if (searchVal) {
+            const t = (d.title || '').toLowerCase();
+            const fn = (d.fileName || '').toLowerCase();
+            const notes = (d.notes || '').toLowerCase();
+            const cat = (d.category || '').toLowerCase();
+            return t.includes(searchVal) || fn.includes(searchVal) || notes.includes(searchVal) || cat.includes(searchVal);
+          }
+          return true;
+        });
+
+        const emptyState = document.getElementById('docEmptyState');
+        const tableContainer = document.getElementById('docTableContainer');
+        const tbody = document.getElementById('docTableBody');
+
+        if (list.length === 0 || filtered.length === 0) {
+          if (tableContainer) tableContainer.classList.add('hidden');
+          if (emptyState) {
+            emptyState.classList.remove('hidden');
+            const emptyTitle = emptyState.querySelector('h4');
+            const emptyP = emptyState.querySelector('p');
+            if (emptyTitle && emptyP) {
+              if (list.length === 0) {
+                emptyTitle.textContent = 'Belum Ada Dokumen Tersimpan';
+                emptyP.textContent = 'Mulai simpan dokumen penting Anda. Beri nama kustom, lihat/preview kapan saja, dan unduh salinannya langsung ke laptop.';
+              } else {
+                emptyTitle.textContent = 'Dokumen Tidak Ditemukan';
+                emptyP.textContent = 'Tidak ada dokumen yang cocok dengan kata kunci pencarian atau kategori yang dipilih.';
+              }
+            }
+          }
+          if (window.lucide) window.lucide.createIcons();
+          return;
+        }
+
+        if (emptyState) emptyState.classList.add('hidden');
+        if (tableContainer) tableContainer.classList.remove('hidden');
+
+        if (tbody) {
+          tbody.innerHTML = filtered.map(d => {
+            const meta = getDocFileMeta(d.fileName, d.fileType);
+            const sizeLabel = formatDocFileSize(d.fileSize);
+            const dateLabel = formatDocDateTime(d.uploadedAt);
+            const notesText = d.notes ? escapeHtml(d.notes) : '<span class="text-slate-300">-</span>';
+
+            return `
+              <tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="py-3 px-3.5 align-middle">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg ${meta.color} flex items-center justify-center shrink-0">
+                      <i data-lucide="${meta.icon}" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0">
+                      <p class="font-bold text-slate-900 text-xs truncate max-w-xs sm:max-w-md" title="${escapeHtml(d.title)}">${escapeHtml(d.title)}</p>
+                      <p class="text-[10.5px] text-slate-400 truncate max-w-xs">${escapeHtml(d.fileName)}</p>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3 px-3 align-middle whitespace-nowrap">
+                  ${getDocCategoryBadge(d.category)}
+                </td>
+                <td class="py-3 px-3 align-middle whitespace-nowrap">
+                  <span class="font-semibold text-slate-700">${sizeLabel}</span>
+                  <span class="text-[10px] text-slate-400 block">${meta.label}</span>
+                </td>
+                <td class="py-3 px-3 align-middle whitespace-nowrap text-slate-600 text-[11px]">
+                  ${dateLabel}
+                </td>
+                <td class="py-3 px-3 align-middle text-slate-500 text-[11px] max-w-xs truncate" title="${escapeHtml(d.notes || '')}">
+                  ${notesText}
+                </td>
+                <td class="py-3 px-3.5 align-middle text-right whitespace-nowrap">
+                  <div class="inline-flex items-center gap-1">
+                    <button type="button" data-doc-preview="${d.id}" title="Lihat / Preview Dokumen"
+                      class="p-1.5 rounded-lg border border-slate-200 hover:bg-indigo-50 hover:border-indigo-200 text-slate-600 hover:text-indigo-600 transition-colors">
+                      <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button type="button" data-doc-download="${d.id}" title="Unduh ke Laptop"
+                      class="p-1.5 rounded-lg border border-slate-200 hover:bg-emerald-50 hover:border-emerald-200 text-slate-600 hover:text-emerald-600 transition-colors">
+                      <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button type="button" data-doc-edit="${d.id}" title="Edit Dokumen"
+                      class="p-1.5 rounded-lg border border-slate-200 hover:bg-blue-50 hover:border-blue-200 text-slate-600 hover:text-blue-600 transition-colors">
+                      <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <button type="button" data-doc-delete="${d.id}" title="Hapus Dokumen"
+                      class="p-1.5 rounded-lg border border-rose-200 hover:bg-rose-50 hover:border-rose-300 text-rose-600 transition-colors">
+                      <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        if (window.lucide) window.lucide.createIcons();
+      } catch (err) {
+        console.error('Error loadAndRenderDocuments:', err);
+      }
+    }
+
+    function openDocManagerModal() {
+      const modal = document.getElementById('docManagerModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        loadAndRenderDocuments();
+      }
+    }
+
+    function closeDocManagerModal() {
+      const modal = document.getElementById('docManagerModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    async function openDocFormModal(docId) {
+      const modal = document.getElementById('docFormModal');
+      const titleInput = document.getElementById('docFormTitle');
+      const catSelect = document.getElementById('docFormCategory');
+      const fileInput = document.getElementById('docFormFileInput');
+      const notesInput = document.getElementById('docFormNotes');
+      const idInput = document.getElementById('docFormId');
+      const modalTitle = document.getElementById('docFormModalTitle');
+      const saveLabel = document.getElementById('btnSaveDocLabel');
+      const currentInfo = document.getElementById('docFileCurrentInfo');
+      const currentName = document.getElementById('docFileCurrentName');
+      const currentSize = document.getElementById('docFileCurrentSize');
+      const reqIndicator = document.getElementById('docFileRequiredIndicator');
+
+      // Reset form
+      document.getElementById('docFormElement').reset();
+      fileInput.value = '';
+
+      if (docId) {
+        // Edit Mode
+        const doc = await docDBGet(docId);
+        if (!doc) {
+          showToast('Dokumen tidak ditemukan');
+          return;
+        }
+        idInput.value = doc.id;
+        titleInput.value = doc.title || '';
+        catSelect.value = doc.category || 'Recruitment';
+        notesInput.value = doc.notes || '';
+        modalTitle.textContent = 'Edit Dokumen';
+        saveLabel.textContent = 'Perbarui Dokumen';
+
+        if (currentInfo && currentName && currentSize) {
+          currentInfo.classList.remove('hidden');
+          currentName.textContent = doc.fileName || 'file';
+          currentSize.textContent = formatDocFileSize(doc.fileSize);
+        }
+        if (reqIndicator) reqIndicator.classList.add('hidden');
+        fileInput.removeAttribute('required');
+      } else {
+        // Create Mode
+        idInput.value = '';
+        modalTitle.textContent = 'Tambah Dokumen Baru';
+        saveLabel.textContent = 'Simpan Dokumen';
+        catSelect.value = state.division === 'adm' ? 'ADM/Finance' : 'Recruitment';
+
+        if (currentInfo) currentInfo.classList.add('hidden');
+        if (reqIndicator) reqIndicator.classList.remove('hidden');
+        fileInput.setAttribute('required', 'required');
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => titleInput.focus(), 100);
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function closeDocFormModal() {
+      const modal = document.getElementById('docFormModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    async function handleDocFormSubmit(e) {
+      e.preventDefault();
+      const idInput = document.getElementById('docFormId').value;
+      const title = document.getElementById('docFormTitle').value.trim();
+      const category = document.getElementById('docFormCategory').value;
+      const notes = document.getElementById('docFormNotes').value.trim();
+      const fileInput = document.getElementById('docFormFileInput');
+      const autoDownload = document.getElementById('docFormAutoDownload').checked;
+
+      if (!title) {
+        showToast('Nama Dokumen wajib diisi');
+        return;
+      }
+
+      let existingDoc = null;
+      if (idInput) {
+        existingDoc = await docDBGet(idInput);
+      }
+
+      const file = fileInput.files && fileInput.files[0];
+
+      if (!existingDoc && !file) {
+        showToast('Silakan pilih berkas dokumen yang akan disimpan');
+        return;
+      }
+
+      let blobData = existingDoc ? existingDoc.blob : null;
+      let fileName = existingDoc ? existingDoc.fileName : '';
+      let fileType = existingDoc ? existingDoc.fileType : '';
+      let fileSize = existingDoc ? existingDoc.fileSize : 0;
+
+      if (file) {
+        blobData = file;
+        fileName = file.name;
+        fileType = file.type || 'application/octet-stream';
+        fileSize = file.size;
+      }
+
+      const recordId = idInput || ('doc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7));
+      const now = new Date().toISOString();
+
+      const docRecord = {
+        id: recordId,
+        title,
+        category,
+        notes,
+        fileName,
+        fileType,
+        fileSize,
+        blob: blobData,
+        uploadedAt: existingDoc ? existingDoc.uploadedAt : now,
+        updatedAt: now
+      };
+
+      try {
+        await docDBSave(docRecord);
+
+        // Jika opsi unduh ke laptop diaktifkan
+        let downloadedMsg = '';
+        if (autoDownload && blobData) {
+          const ok = triggerLaptopDownload(blobData, title, fileName);
+          if (ok) downloadedMsg = ' dan diunduh ke folder Download laptop';
+        }
+
+        showToast(`Dokumen "${title}" berhasil disimpan${downloadedMsg}`);
+        closeDocFormModal();
+        loadAndRenderDocuments();
+      } catch (err) {
+        console.error('Error saving document to IndexedDB:', err);
+        showToast('Gagal menyimpan dokumen: ' + err.message);
+      }
+    }
+
+    async function downloadDocById(id) {
+      const doc = await docDBGet(id);
+      if (!doc || !doc.blob) {
+        showToast('Berkas dokumen tidak ditemukan');
+        return;
+      }
+      const ok = triggerLaptopDownload(doc.blob, doc.title, doc.fileName);
+      if (ok) {
+        showToast(`Mengunduh "${doc.title}" ke folder Download laptop...`);
+      } else {
+        showToast('Gagal mengunduh berkas');
+      }
+    }
+
+    async function previewDocById(id) {
+      const doc = await docDBGet(id);
+      if (!doc || !doc.blob) {
+        showToast('Berkas dokumen tidak ditemukan');
+        return;
+      }
+
+      activePreviewDoc = doc;
+      if (activeDocPreviewUrl) {
+        URL.revokeObjectURL(activeDocPreviewUrl);
+        activeDocPreviewUrl = null;
+      }
+
+      const modal = document.getElementById('docPreviewModal');
+      const titleEl = document.getElementById('docPreviewTitle');
+      const subtitleEl = document.getElementById('docPreviewSubtitle');
+      const bodyEl = document.getElementById('docPreviewBody');
+
+      titleEl.textContent = doc.title || 'Preview Dokumen';
+      subtitleEl.textContent = `${doc.fileName} (${formatDocFileSize(doc.fileSize)}) • ${doc.category}`;
+
+      activeDocPreviewUrl = URL.createObjectURL(doc.blob);
+      const ft = (doc.fileType || '').toLowerCase();
+      const fn = (doc.fileName || '').toLowerCase();
+
+      if (ft.includes('pdf') || fn.endsWith('.pdf')) {
+        bodyEl.innerHTML = `
+          <iframe src="${activeDocPreviewUrl}" class="w-full h-full rounded-xl bg-white border border-slate-200 shadow-sm" title="PDF Preview"></iframe>
+        `;
+      } else if (ft.includes('image') || fn.endsWith('.png') || fn.endsWith('.jpg') || fn.endsWith('.jpeg') || fn.endsWith('.webp')) {
+        bodyEl.innerHTML = `
+          <div class="flex flex-col items-center justify-center p-4 max-h-full">
+            <img src="${activeDocPreviewUrl}" alt="${escapeHtml(doc.title)}" class="max-w-full max-h-[72vh] object-contain rounded-xl shadow-lg border border-slate-200 bg-white" />
+          </div>
+        `;
+      } else {
+        // Other formats (Word, Excel, Zip, dll.)
+        const meta = getDocFileMeta(doc.fileName, doc.fileType);
+        bodyEl.innerHTML = `
+          <div class="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-lg border border-slate-200">
+            <div class="w-16 h-16 rounded-2xl ${meta.color} flex items-center justify-center mx-auto mb-4 shadow-sm">
+              <i data-lucide="${meta.icon}" class="w-8 h-8"></i>
+            </div>
+            <h4 class="text-base font-bold text-slate-900">${escapeHtml(doc.title)}</h4>
+            <p class="text-xs text-slate-500 mt-1">${escapeHtml(doc.fileName)} (${formatDocFileSize(doc.fileSize)})</p>
+            <p class="text-xs text-slate-600 mt-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+              Format <strong>${meta.label}</strong> tidak dapat ditampilkan langsung di browser. Silakan unduh dokumen untuk membukanya di laptop.
+            </p>
+            <button type="button" id="btnPreviewDirectDownload"
+              class="mt-5 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition-colors">
+              <i data-lucide="download" class="w-4 h-4"></i>
+              <span>Unduh Dokumen ke Laptop</span>
+            </button>
+          </div>
+        `;
+        document.getElementById('btnPreviewDirectDownload')?.addEventListener('click', () => {
+          downloadDocById(doc.id);
+        });
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function closeDocPreview() {
+      const modal = document.getElementById('docPreviewModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      if (activeDocPreviewUrl) {
+        URL.revokeObjectURL(activeDocPreviewUrl);
+        activeDocPreviewUrl = null;
+      }
+      activePreviewDoc = null;
+    }
+
+    async function confirmDeleteDoc(id) {
+      const doc = await docDBGet(id);
+      if (!doc) return;
+      const title = doc.title || doc.fileName || 'dokumen ini';
+      if (confirm(`Apakah Anda yakin ingin menghapus dokumen "${title}" secara permanen dari penyimpanan?`)) {
+        await docDBDelete(id);
+        showToast(`Dokumen "${title}" berhasil dihapus`);
+        loadAndRenderDocuments();
+      }
+    }
+
+    // =========================================================
     // 6. EVENT LISTENERS
     // =========================================================
     function initEvents() {
@@ -3380,6 +4207,62 @@ function doPost(e) {
       document.getElementById('btnExportExcel').addEventListener('click', exportCurrentExcel);
       document.getElementById('btnExportPdf').addEventListener('click', exportCurrentPdf);
 
+      // Document Storage CRUD Events
+      const btnOpenDoc = document.getElementById('btnOpenDocManager');
+      if (btnOpenDoc) btnOpenDoc.addEventListener('click', openDocManagerModal);
+
+      document.getElementById('btnCloseDocManager')?.addEventListener('click', closeDocManagerModal);
+      document.getElementById('btnDoneDocManager')?.addEventListener('click', closeDocManagerModal);
+      document.getElementById('docManagerModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'docManagerModal') closeDocManagerModal();
+      });
+
+      document.getElementById('btnOpenAddDocForm')?.addEventListener('click', () => openDocFormModal(null));
+      document.getElementById('btnEmptyAddDoc')?.addEventListener('click', () => openDocFormModal(null));
+      document.getElementById('btnCloseDocForm')?.addEventListener('click', closeDocFormModal);
+      document.getElementById('btnCancelDocForm')?.addEventListener('click', closeDocFormModal);
+      document.getElementById('docFormModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'docFormModal') closeDocFormModal();
+      });
+
+      document.getElementById('docFormElement')?.addEventListener('submit', handleDocFormSubmit);
+
+      document.getElementById('docSearchInput')?.addEventListener('input', loadAndRenderDocuments);
+      document.getElementById('docCategoryFilter')?.addEventListener('change', loadAndRenderDocuments);
+
+      // Delegated clicks on Document Table
+      document.getElementById('docTableBody')?.addEventListener('click', (e) => {
+        const previewBtn = e.target.closest('[data-doc-preview]');
+        if (previewBtn) {
+          previewDocById(previewBtn.getAttribute('data-doc-preview'));
+          return;
+        }
+        const downloadBtn = e.target.closest('[data-doc-download]');
+        if (downloadBtn) {
+          downloadDocById(downloadBtn.getAttribute('data-doc-download'));
+          return;
+        }
+        const editBtn = e.target.closest('[data-doc-edit]');
+        if (editBtn) {
+          openDocFormModal(editBtn.getAttribute('data-doc-edit'));
+          return;
+        }
+        const deleteBtn = e.target.closest('[data-doc-delete]');
+        if (deleteBtn) {
+          confirmDeleteDoc(deleteBtn.getAttribute('data-doc-delete'));
+          return;
+        }
+      });
+
+      // Preview Modal Events
+      document.getElementById('btnCloseDocPreview')?.addEventListener('click', closeDocPreview);
+      document.getElementById('docPreviewModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'docPreviewModal') closeDocPreview();
+      });
+      document.getElementById('btnPreviewDownload')?.addEventListener('click', () => {
+        if (activePreviewDoc) downloadDocById(activePreviewDoc.id);
+      });
+
       // Modal close & submit
       document.getElementById('btnCloseModal').addEventListener('click', closeProjectModal);
       document.getElementById('btnCancelModal').addEventListener('click', closeProjectModal);
@@ -3550,6 +4433,7 @@ function doPost(e) {
       initEvents();
       renderAll();
       initCloudSync();
+      updateDocBadgeCount();
 
       const progressBar = document.getElementById('loadingProgressBar');
       const statusText = document.getElementById('loadingStatusText');
